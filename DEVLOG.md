@@ -1,13 +1,13 @@
 # Plan
 
--Raytracing um ein Schwarzes Loch <br>
--Calc metric Tensor <br>
--Calc Cristophels <br>
--Integrate Geodesic Equation numerically <br>
--Check for hit <br>
--Übertragung auf GPU <br>
--Render rückwärtslaufen lassen <br> <br>
+- Raytracing um ein Schwarzes Loch
+- Calc metric Tensor
+- Calc Cristophels
+- Integrate Geodesic Equation numerically
+- Check for hit
+- Übertragung auf GPU
+- Render rückwärtslaufen lassen
 
 # Devlog
 
--13.1.2026 Calc Christophels
+- 13.1.2026 Calc Christophels
