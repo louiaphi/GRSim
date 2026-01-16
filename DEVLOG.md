@@ -10,4 +10,6 @@
 
 # Devlog
 
-- 13.1.2026 Calc Christophels
+- 13.1.2026 Calc Metric Tensor
+- 15.1.2026 Dependencies to Calculate Metric Tenso
+- 16.12.2026 Function to calculate Metric Tensor
