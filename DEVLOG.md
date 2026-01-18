@@ -12,6 +12,7 @@
 
 - No GPU Acceleration
 - Simulate Light one after another
+- Simulate Redshift
 
 # Devlog
 
@@ -19,3 +20,7 @@
 - 15.1.2026 Dependencies to Calculate Metric Tenso
 - 16.1.2026 Function to calculate Metric Tensor
 - 18.1.2026 Runge Kutta RK4 Integration finished
+
+## ToDo
+
+- check for constraints in geodesic integration
