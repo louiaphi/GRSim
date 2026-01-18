@@ -1,7 +1,9 @@
 using JetBrains.Annotations;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.XR;
+using static UnityEditor.PlayerSettings;
 
 public class SimSingLight : MonoBehaviour
 {
@@ -21,23 +23,100 @@ public class SimSingLight : MonoBehaviour
         Christoffelsymbols = new Matrix4x4[4];
     }
 
-    #region Metric Tensor Calculation
-
-    public Vector4 RK4(Vector3 pos, float StepSize) //4D space-Time pos not needed because integrating with affine partameter lambda
+    public struct LightRay
     {
-        return new Vector4 ( 0, 0, 0, 0);
+        public LightRay(Vector4 pos, Vector2 k)
+        {
+            this.pos = pos;
+            this.k = k;
+        }
+        public Vector4 pos;
+        public Vector4 k; // Richtung
+        
     }
 
-    public void CalcDelMetricTensor(Vector3 pos, float r, float a, float M)
+    public LightRay StepLight (LightRay Y, float h)
     {
-        //Matrix4x4 delMetricTensorDim1 = MatrixScalarMul(OuterProduct(CalcL(pos, r, a), CalcL(pos, r, a)), 2 * CalcDelH(pos, r, M, a)[dim - 1]); //-1 weil dim 0 = Zeit //alt egal
-        Vector4 L = CalcL(pos, r, a);
-        Vector4 delR = CalcDelR(pos, a);
-        Vector4[] delL = CalcDelL(pos, r, delR, a);
-        Vector4 delH = CalcDelH(pos, r, M, a);
-        float H = CalcH(r, pos.z, M, a);
+        //Beschleunigung
+        //k_n wird als LightRay gespeichert, da es die selbe Form hat, ist aber anderer Natur (x->k,k->a)
+        LightRay k1 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        LightRay k2 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        LightRay k3 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        LightRay k4 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        //k1
+        k1 = CalculateA(Y);
+        //k2
+        LightRay k2TrialState = new LightRay(); //make new approximation
+        for (int mu = 0; mu < 4; mu++)
+        {
+            k2TrialState.pos[mu] = Y.pos[mu] + (h / 2) * k1.pos[mu]; //k1.pos actually k
+            k2TrialState.k[mu] = Y.k[mu] + (h/2) * k1.k[mu]; //k1.k actually a
+        }
+        k2 = CalculateA(k2TrialState);
+        //k3
+        LightRay k3TrialState = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        for (int mu = 0; mu < 4; mu++)
+        {
+            k3TrialState.pos[mu] = Y.pos[mu] + (h / 2) * k2.pos[mu]; //k2.pos actually k
+            k3TrialState.k[mu] = Y.k[mu] + (h / 2) * k2.k[mu]; //k2.k actually a
+        }
+        k3 = CalculateA(k3TrialState);
+        //k4
+        LightRay k4TrialState = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        for (int mu = 0; mu < 4; mu++)
+        {
+            k4TrialState.pos[mu] = Y.pos[mu] + h * k3.pos[mu]; //k2.pos actually k
+            k4TrialState.k[mu] = Y.k[mu] + h * k3.k[mu]; //k2.k actually a
+        }
+        k4 = CalculateA(k4TrialState);
+        float posX = Y.pos.x + (h / 6) * (k1.pos.x + 2 * k2.pos.x + 2 * k3.pos.x + k4.pos.x); //Ich bereue es leicht Copilot deaktiviert zu haben......
+        float posY = Y.pos.y + (h / 6) * (k1.pos.y + 2 * k2.pos.y + 2 * k3.pos.y + k4.pos.y);
+        float posZ = Y.pos.z + (h / 6) * (k1.pos.z + 2 * k2.pos.z + 2 * k3.pos.z + k4.pos.z);
+        float posW = Y.pos.w + (h / 6) * (k1.pos.w + 2 * k2.pos.w + 2 * k3.pos.w + k4.pos.w);
+        float kX = Y.k.x + (h / 6) * (k1.k.x + 2 * k2.k.x + 2 * k3.k.x + k4.k.x);
+        float kY = Y.k.y + (h / 6) * (k1.k.y + 2 * k2.k.y + 2 * k3.k.y + k4.k.y);
+        float kZ = Y.k.z + (h / 6) * (k1.k.z + 2 * k2.k.z + 2 * k3.k.z + k4.k.z);
+        float kW = Y.k.w + (h / 6) * (k1.k.w + 2 * k2.k.w + 2 * k3.k.w + k4.k.w);
+        LightRay Y_new = new LightRay(new Vector4(posX, posY, posZ, posW), new Vector4(kX, kY, kZ, kW));
+        Y_new.k.x = AdjustForConstraints(Y_new);
+        return Y_new;
+    }
 
-        for (int lambda = 1; lambda  < 4; lambda++)
+    public LightRay CalculateA (LightRay aprxLight) //position, k -> k_n(k, a)
+    {
+        CalculateChristoffelsymbols(aprxLight.pos, Mathf.Sqrt(CalcR2(aprxLight.pos, a)), a, M);
+        LightRay Output = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for (int alpha = 0; alpha < 4; alpha++)
+            {
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    Output.k[mu] += -1 * Christoffelsymbols[mu][alpha, beta] * aprxLight.k[alpha] * aprxLight.k[beta];
+                }
+            }
+        }
+        Output.pos = aprxLight.k;
+        return Output;
+    }
+
+    public  float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
+    {
+        CalcMetricTensor(Light.pos, Mathf.Sqrt(CalcR2(Light.pos, a)), a, M);
+
+    }
+
+    #region Metric Tensor Calculation
+
+    public void CalcDelMetricTensor (Vector4 position, float r, float a, float M)
+    {
+        Vector4 L = CalcL(position, r, a);
+        Vector4 delR = CalcDelR(position, a);
+        Vector4[] delL = CalcDelL(position, r, delR, a);
+        Vector4 delH = CalcDelH(position, r, M, a);
+        float H = CalcH(r, position.w, M, a); //actually z, but (t, x, y, z) -> (x, y, z, w)
+
+        for (int lambda = 1; lambda < 4; lambda++)
         {
             for (int mu = 0; mu < 4; mu++)
             {
@@ -48,11 +127,11 @@ public class SimSingLight : MonoBehaviour
             }
         }
     }
-    public void CalcMetricTensor(Vector3 position, float r, float a, float M)
+    public void CalcMetricTensor (Vector4 position, float r, float a, float M)
     {
-        float x = position.x;
-        float y = position.y;
-        float z = position.z;
+        float x = position.y; //ahhhhhhhhhhhhhhhhh
+        float y = position.z; //immer noch ahhhhhhhhhh
+        float z = position.w; //ahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
         float x2 = Mathf.Pow(x, 2);
         float y2 = Mathf.Pow(y, 2);
         float z2 = Mathf.Pow(z, 2);
@@ -68,7 +147,7 @@ public class SimSingLight : MonoBehaviour
         MetricTensor = MatrixAdd(MetricTensor, diag);
     }
 
-    public void CalculateChristoffelsymbols(Vector3 pos, float r, float a, float M)
+    public void CalculateChristoffelsymbols(Vector4 pos, float r, float a, float M)
     {
         for (int mu = 0; mu < 4; mu++)
         {
@@ -91,9 +170,9 @@ public class SimSingLight : MonoBehaviour
 
 
     #region Auxiliary Functions for Metric Tensor
-    Vector4 CalcL(Vector3 pos, float r, float a)
+    Vector4 CalcL(Vector4 pos, float r, float a)
     {
-        Vector4 L = new Vector4(1, (r * pos.x + a * pos.y) / (r * r + a * a), (r * pos.y - a * pos.x) / (r * r + a * a), pos.z / r);
+        Vector4 L = new Vector4(1, (r * pos.y + a * pos.z) / (r * r + a * a), (r * pos.z - a * pos.y) / (r * r + a * a), pos.w / r);
         return L;
     }
 
@@ -117,20 +196,20 @@ public class SimSingLight : MonoBehaviour
         return numerator / denominator;
     }
 
-    Vector4 CalcDelH(Vector3 pos, float r, float M, float a)
+    Vector4 CalcDelH(Vector4 pos, float r, float M, float a)
     {
-        float delH_R = CalcDelH_R(r, pos.z, M, a);
-        float delH_Z = CalcDelH_Z(r, pos.z, M, a);
-        Vector3 dr = CalcDelR(pos, a);
-        float delH_X = delH_R * dr.x;
-        float delH_Y = delH_R * dr.y;
-        float delH_Z_final = delH_R * dr.z + delH_Z;
+        float delH_R = CalcDelH_R(r, pos.w, M, a);
+        float delH_Z = CalcDelH_Z(r, pos.w, M, a);
+        Vector4 dr = CalcDelR(pos, a);
+        float delH_X = delH_R * dr.y;
+        float delH_Y = delH_R * dr.z;
+        float delH_Z_final = delH_R * dr.w + delH_Z;
         return new Vector4(0, delH_X, delH_Y, delH_Z_final);
     }
 
     #region Derivatives of L
 
-    public Vector4[] CalcDelL(Vector3 pos, float r, Vector4 delR, float a) //
+    public Vector4[] CalcDelL(Vector4 pos, float r, Vector4 delR, float a) //
     {
         int[] KroX = new int[4] { 0, 1, 0, 0 }; //Kroenecker X
         int[] KroY = new int[4] { 0, 0, 1, 0 };
@@ -140,78 +219,51 @@ public class SimSingLight : MonoBehaviour
         Vector4 delLY = new Vector4(0, 0, 0, 0);
         Vector4 delLZ = new Vector4(0, 0, 0, 0);
 
-        float FactorX = (pos.x * (r * r + a * a) - 2 * r * (r * pos.x + a * pos.y)) / (Mathf.Pow(r * r + a * a, 2));
+        float FactorX = (pos.y * (r * r + a * a) - 2 * r * (r * pos.y + a * pos.z)) / (Mathf.Pow(r * r + a * a, 2));
         for (int dim = 1; dim < 4; dim++)
         {
             delLX[dim] = (r * KroX[dim] + a * KroY[dim]) / (r * r + a * a) + FactorX * delR[dim]; 
         }
-        float FactorY = (pos.y * (r * r + a * a) - 2 * r * (r * pos.y - a * pos.x)) / (Mathf.Pow(r * r + a * a, 2));
+        float FactorY = (pos.z * (r * r + a * a) - 2 * r * (r * pos.z - a * pos.y)) / (Mathf.Pow(r * r + a * a, 2));
         for (int dim = 1; dim < 4; dim++)
         {
             delLY[dim] = (r * KroY[dim] - a* KroX[dim]) / (r*r + a*a) + FactorY * delR[dim];
         }
         for (int dim = 1; dim < 4; dim++)
         {
-            delLZ[dim] = KroZ[dim] - pos.z / (r*r) * delR[dim];
+            delLZ[dim] = KroZ[dim] - pos.w / (r*r) * delR[dim];
         }
         Vector4[] Output = new Vector4[4] { delLT, delLX, delLY, delLZ };
         return Output;
 
     }
 
-    //public Vector4 CalcDelL_x (Vector3 pos, float r, float M, float a) //derivatives of l_x in respect to x, y, z and r
-    //{
-    //   float DelLx_X = r / (Mathf.Pow(r, 2) + Mathf.Pow(a, 2));
-    //   float DelLx_Y = a / (Mathf.Pow(r, 2) + Mathf.Pow(a, 2));
-    //   float DelLx_Z = 0f;
-    //   float DelLx_R = (pos.x * (Mathf.Pow(r, 2) + Mathf.Pow(a, 2)) - (r * pos.x + a * pos.y) * 2 * r) / Mathf.Pow((Mathf.Pow(r, 2) + Mathf.Pow(a, 2)), 2);
-    //   return new Vector4(DelLx_X, DelLx_Y, DelLx_Z, DelLx_R);
-    //}
-    //
-    //public Vector4 CalcDelL_y(Vector3 pos, float r, float M, float a) //derivatives of l_y in respect to x, y, z and r
-    //{
-    //    float DelLy_X = -a / (Mathf.Pow(r, 2) + Mathf.Pow(a, 2));
-    //    float DelLy_Y = r / (Mathf.Pow(r, 2) + Mathf.Pow(a, 2));
-    //    float DelLy_Z = 0f;
-    //    float DelLy_R = (pos.y * (Mathf.Pow(r, 2) + Mathf.Pow(a, 2)) - (r * pos.y - a * pos.x) * 2 * r) / Mathf.Pow((Mathf.Pow(r, 2) + Mathf.Pow(a, 2)), 2);
-    //    return new Vector4(DelLy_X, DelLy_Y, DelLy_Z, DelLy_R);
-    //}
-    //
-    //public Vector4 CalcDelL_z(Vector3 pos, float r, float M, float a) //derivatives of l_z in respect to x, y, z and r
-    //{
-    //    float DelLz_X = 0f;
-    //    float DelLz_Y = 0f;
-    //    float DelLz_Z = 1 / r;
-    //    float DelLz_R = -pos.z / (Mathf.Pow(r, 2));
-    //    return new Vector4(DelLz_X, DelLz_Y, DelLz_Z, DelLz_R);
-    //}
-
     #endregion
 
-    public float CalcR2(Vector3 pos, float a)
+    public float CalcR2(Vector4 pos, float a)
     {
-        float rho2 = pos.x + pos.y + pos.z;
-        return 0.5f * (rho2 - Mathf.Pow(a, 2) + Mathf.Sqrt(Mathf.Pow(rho2 - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.z, 2)));
+        float rho2 = pos.y + pos.z + pos.w;
+        return 0.5f * (rho2 - Mathf.Pow(a, 2) + Mathf.Sqrt(Mathf.Pow(rho2 - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2)));
     }
 
-    public Vector4 CalcDelR2(Vector3 pos, float a)
+    public Vector4 CalcDelR2(Vector4 pos, float a)
     {
         float a2 = Mathf.Pow(a, 2);
-        float rho2 = pos.x * pos.x + pos.y * pos.y + pos.z * pos.z;
+        float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
         float rho = Mathf.Sqrt(rho2);
-        float delRho2 = 2 * pos.x + 2 * pos.y + 2 * pos.z;
-        float Delta = Mathf.Pow(pos.x + pos.y + pos.z - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.z, 2);
-        float delDeltaX = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.x;
-        float delDeltaY = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.y;
-        float delDeltaZ = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.z + 8 * Mathf.Pow(a, 2) * pos.z;
+        float delRho2 = 2 * pos.y + 2 * pos.z + 2 * pos.w;
+        float Delta = Mathf.Pow(pos.y + pos.z + pos.w - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2);
+        float delDeltaX = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.y;
+        float delDeltaY = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.z;
+        float delDeltaZ = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.w + 8 * Mathf.Pow(a, 2) * pos.w;
         float sqrtDelta = Mathf.Sqrt(Delta);
-        float delR2X = 0.5f * (2 * pos.x + (2 * (rho2 - a2) * pos.x) / (sqrtDelta));
-        float delR2Y = 0.5f * (2 * pos.y + (2 * (rho2 - a2) * pos.y) / (sqrtDelta));
-        float delR2Z = 0.5f * (2 * pos.z + (2 * (rho2 - a2) * pos.z + 4 * a2 * pos.z) / (sqrtDelta));
+        float delR2X = 0.5f * (2 * pos.y + (2 * (rho2 - a2) * pos.y) / (sqrtDelta));
+        float delR2Y = 0.5f * (2 * pos.z + (2 * (rho2 - a2) * pos.z) / (sqrtDelta));
+        float delR2Z = 0.5f * (2 * pos.w + (2 * (rho2 - a2) * pos.w + 4 * a2 * pos.w) / (sqrtDelta));
         return new Vector4(0, delR2X, delR2Y, delR2Z);
     }
 
-    public Vector4 CalcDelR(Vector3 pos, float a)
+    public Vector4 CalcDelR(Vector4 pos, float a)
     {
         Vector4 delR2 = CalcDelR2(pos, a);
         float R2 = CalcR2(pos, a);
