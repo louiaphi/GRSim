@@ -29,3 +29,10 @@
 - account for colissions [ ]
 - render image [ ]
 - account for redshift [ ]
+
+## Debugg Steps:
+
+- metric tensor [x]
+- christoffel symbols [ ]
+- del metric tensor [ ]
+- RK4 [ ]
