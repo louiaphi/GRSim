@@ -24,3 +24,7 @@
 ## ToDo
 
 - check for constraints in geodesic integration
+- create local tedrad
+- account for colissions
+- render image
+- account for redshift
