@@ -20,11 +20,12 @@
 - 15.1.2026 Dependencies to Calculate Metric Tensor
 - 16.1.2026 Function to calculate derivatives of Metric Tensor
 - 18.1.2026 Runge Kutta RK4 Integration finished
+- 20.1.2026 Checked for Constraints and started debugging
 
 ## ToDo
 
-- check for constraints in geodesic integration
-- create local tedrad
-- account for colissions
-- render image
-- account for redshift
+- check for constraints in geodesic integration [x]
+- create local tedrad [ ]
+- account for colissions [ ]
+- render image [ ]
+- account for redshift [ ]
