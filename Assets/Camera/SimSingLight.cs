@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using System.Text;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -12,20 +13,84 @@ public class SimSingLight : MonoBehaviour
     Matrix4x4[] Christoffelsymbols;
     Matrix4x4 diag;
 
-    float M = 1.0f;
-    float a = 0.5f;
+    float M = 1;
+    float a = 0.1f;
 
     void Start()
     {
         diag = Matrix4x4.identity;
         diag[0, 0] = -1;
+        MetricTensor = Matrix4x4.identity;
         dMetricTensor = new Matrix4x4[4];
         Christoffelsymbols = new Matrix4x4[4];
+
+        //Test();
+        float r = CalcR(new Vector4(0, 1, 0, 0), a);
+        CalcMetricTensor(new Vector4(0, 1, 0, 0), r, a, M);
+        Debug.Log(r);
+        LogTensor(MetricTensor);
+        CopyMatrix(MetricTensor);
+    }
+
+    public void Test()
+    {
+        LightRay testLight1 = new LightRay(new Vector4(0, 100, 100, 0), new Vector4(1, 1, 0, 0));
+        LightRay testLight2 = StepLight(testLight1, 1);
+        LogRay(testLight2);
+    }
+
+    public void LogRay(LightRay ray)
+    {
+        Debug.Log("pt:");
+        Debug.Log(ray.pos.x);
+        Debug.Log("px:");
+        Debug.Log(ray.pos.y);
+        Debug.Log("py:");
+        Debug.Log(ray.pos.z);
+        Debug.Log("pz:");
+        Debug.Log(ray.pos.w);
+        Debug.Log("kt");
+        Debug.Log(ray.k.x);
+        Debug.Log("kx");
+        Debug.Log(ray.k.y);
+        Debug.Log("ky");
+        Debug.Log(ray.k.z);
+        Debug.Log("kz");
+        Debug.Log(ray.k.w);
+    }
+
+    public void LogTensor(Matrix4x4 m)
+    {
+        Debug.Log("(" + m[0, 0] + ", " + m[0, 1] + ", " + m[0, 2] + ", " + m[0, 3] + ")");
+        Debug.Log("(" + m[1, 0] + ", " + m[1, 1] + ", " + m[1, 2] + ", " + m[1, 3] + ")");
+        Debug.Log("(" + m[2, 0] + ", " + m[2, 1] + ", " + m[2, 2] + ", " + m[2, 3] + ")");
+        Debug.Log("(" + m[3, 0] + ", " + m[3, 1] + ", " + m[3, 2] + ", " + m[3, 3] + ")");
+    }
+
+
+    public static void CopyMatrix(Matrix4x4 m) //function written by ChatGPT for debugging
+    {
+        var sb = new StringBuilder();
+        for (int row = 0; row < 4; row++)
+        {
+            sb.AppendLine(
+                $"{m[row, 0]}, {m[row, 1]}, {m[row, 2]}, {m[row, 3]}"
+            );
+        }
+
+        GUIUtility.systemCopyBuffer = sb.ToString();
+        Debug.Log("Matrix copied to clipboard");
+    }
+
+    public float CalcR(Vector4 pos, float a)
+    {
+        float r = Mathf.Sqrt(CalcR2(pos, a));
+        return r;
     }
 
     public struct LightRay
     {
-        public LightRay(Vector4 pos, Vector2 k)
+        public LightRay(Vector4 pos, Vector4 k)
         {
             this.pos = pos;
             this.k = k;
@@ -103,7 +168,22 @@ public class SimSingLight : MonoBehaviour
     public  float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
     {
         CalcMetricTensor(Light.pos, Mathf.Sqrt(CalcR2(Light.pos, a)), a, M);
-
+        float pd2 = 0; //p /2
+        for (int i = 0; i < 4; i++)
+        {
+            pd2 += MetricTensor[0, i] * Light.k[i]; 
+        }
+        float Q = 0;
+        for (int i = 0;i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                Q += MetricTensor[i, j] * Light.k[i] * Light.k[j];
+            }
+        }
+        Q *= MetricTensor[0, 0];
+        float k0 = (pd2 + Mathf.Sqrt(pd2 * pd2 - Q)) / (MetricTensor[0, 0]);
+        return k0 * k0;
     }
 
     #region Metric Tensor Calculation
@@ -129,22 +209,16 @@ public class SimSingLight : MonoBehaviour
     }
     public void CalcMetricTensor (Vector4 position, float r, float a, float M)
     {
-        float x = position.y; //ahhhhhhhhhhhhhhhhh
-        float y = position.z; //immer noch ahhhhhhhhhh
         float z = position.w; //ahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
-        float x2 = Mathf.Pow(x, 2);
-        float y2 = Mathf.Pow(y, 2);
-        float z2 = Mathf.Pow(z, 2);
-        float H = CalcH(r, z, M, z);
-        float r2 = Mathf.Pow(r, 2);
-        MetricTensor = new Matrix4x4(
-            new Vector4(1, x / r, y / r, z / r),
-            new Vector4(x / r, x2 / r2, x * y / r2, x * z / r2),
-            new Vector4(y / r, x * y / r2, y2 / r2, y * z / r2),
-            new Vector4(z / r, x * z / r2, y * z / r2, z2 / r2)
-        );
-        MetricTensor = MatrixScalarMul(MetricTensor, H);
-        MetricTensor = MatrixAdd(MetricTensor, diag);
+        float H = CalcH(r, z, M, a);
+        Vector4 l = CalcL(position, r, a);
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for (int nu = 0; nu < 4; nu++)
+            {
+                MetricTensor[mu, nu] = diag[mu, nu] + 2 * H * l[mu] * l[nu];
+            }
+        }
     }
 
     public void CalculateChristoffelsymbols(Vector4 pos, float r, float a, float M)
@@ -172,7 +246,7 @@ public class SimSingLight : MonoBehaviour
     #region Auxiliary Functions for Metric Tensor
     Vector4 CalcL(Vector4 pos, float r, float a)
     {
-        Vector4 L = new Vector4(1, (r * pos.y + a * pos.z) / (r * r + a * a), (r * pos.z - a * pos.y) / (r * r + a * a), pos.w / r);
+        Vector4 L = new Vector4(-1, (r * pos.y + a * pos.z) / (r * r + a * a), (r * pos.z - a * pos.y) / (r * r + a * a), pos.w / r);
         return L;
     }
 
