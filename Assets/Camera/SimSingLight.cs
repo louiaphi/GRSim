@@ -25,18 +25,37 @@ public class SimSingLight : MonoBehaviour
         Christoffelsymbols = new Matrix4x4[4];
 
         //Test();
-        float r = CalcR(new Vector4(0, 1, 0, 0), a);
-        CalcMetricTensor(new Vector4(0, 1, 0, 0), r, a, M);
-        Debug.Log(r);
-        LogTensor(MetricTensor);
-        CopyMatrix(MetricTensor);
+        Vector4 pos = new Vector4(0, 1, 0, 1);
+        Test();
+        //float r = CalcR(pos, a);
+        //CalcDelMetricTensor(pos, r, a, M);
+        //Debug.Log(r);
+        //CalculateChristoffelsymbols(pos, r, a, M);
+        //LogTensorArray(Christoffelsymbols);
+        //CopyMatrixArray(Christoffelsymbols);
+        //Debug.Log("Sum: " + TestDetChri());
+        //LogTensor(dMetricTensor[1]);
+        //CopyMatrix(dMetricTensor[1]);
     }
 
     public void Test()
     {
         LightRay testLight1 = new LightRay(new Vector4(0, 100, 100, 0), new Vector4(1, 1, 0, 0));
-        LightRay testLight2 = StepLight(testLight1, 1);
+        LightRay testLight2 = StepLight(testLight1, 0.01f);
         LogRay(testLight2);
+    }
+
+    public float TestDetChri()
+    {
+        float sum = 0;
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for(int nu = 0; nu < 4; nu++)
+            {
+                sum += Christoffelsymbols[mu][mu, nu];
+            }
+        }
+        return sum;
     }
 
     public void LogRay(LightRay ray)
@@ -65,6 +84,31 @@ public class SimSingLight : MonoBehaviour
         Debug.Log("(" + m[1, 0] + ", " + m[1, 1] + ", " + m[1, 2] + ", " + m[1, 3] + ")");
         Debug.Log("(" + m[2, 0] + ", " + m[2, 1] + ", " + m[2, 2] + ", " + m[2, 3] + ")");
         Debug.Log("(" + m[3, 0] + ", " + m[3, 1] + ", " + m[3, 2] + ", " + m[3, 3] + ")");
+    }
+
+    public void LogTensorArray(Matrix4x4[] mArray)
+    {
+        for (int i = 0; i < mArray.Length; i++)
+        {
+            Debug.Log($"Tensor {i}:");
+            LogTensor(mArray[i]);
+        }
+    }
+    public static void CopyMatrixArray(Matrix4x4[] mArray) //function written by ChatGPT for debugging
+    {
+        var sb = new StringBuilder();
+        for (int index = 0; index < mArray.Length; index++)
+        {
+            sb.AppendLine($"Matrix {index}:");
+            for (int row = 0; row < 4; row++)
+            {
+                sb.AppendLine(
+                    $"{mArray[index][row, 0]}, {mArray[index][row, 1]}, {mArray[index][row, 2]}, {mArray[index][row, 3]}"
+                );
+            }
+        }
+        GUIUtility.systemCopyBuffer = sb.ToString();
+        Debug.Log("Matrix array copied to clipboard");
     }
 
 
@@ -149,7 +193,6 @@ public class SimSingLight : MonoBehaviour
 
     public LightRay CalculateA (LightRay aprxLight) //position, k -> k_n(k, a)
     {
-        CalculateChristoffelsymbols(aprxLight.pos, Mathf.Sqrt(CalcR2(aprxLight.pos, a)), a, M);
         LightRay Output = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
         for (int mu = 0; mu < 4; mu++)
         {
@@ -275,7 +318,7 @@ public class SimSingLight : MonoBehaviour
         float delH_R = CalcDelH_R(r, pos.w, M, a);
         float delH_Z = CalcDelH_Z(r, pos.w, M, a);
         Vector4 dr = CalcDelR(pos, a);
-        float delH_X = delH_R * dr.y;
+        float delH_X = delH_R * dr.y; //ahhhhhh
         float delH_Y = delH_R * dr.z;
         float delH_Z_final = delH_R * dr.w + delH_Z;
         return new Vector4(0, delH_X, delH_Y, delH_Z_final);
@@ -320,7 +363,7 @@ public class SimSingLight : MonoBehaviour
         return 0.5f * (rho2 - Mathf.Pow(a, 2) + Mathf.Sqrt(Mathf.Pow(rho2 - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2)));
     }
 
-    public Vector4 CalcDelR2(Vector4 pos, float a)
+    public Vector4 CalcDelR2False(Vector4 pos, float a)
     {
         float a2 = Mathf.Pow(a, 2);
         float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
@@ -337,13 +380,33 @@ public class SimSingLight : MonoBehaviour
         return new Vector4(0, delR2X, delR2Y, delR2Z);
     }
 
-    public Vector4 CalcDelR(Vector4 pos, float a)
+    Vector4 CalcDelR2(Vector4 pos, float a)
+    {
+        float x = pos.y; 
+        float y = pos.z;
+        float z = pos.w;
+        float a2 = a * a;
+        float rho2 = x * x + y * y + z * z;
+        float delta = Mathf.Pow(rho2 - a2, 2) + 4f * a2 * z * z;
+        float sqrtDelta = Mathf.Sqrt(delta);
+
+        float delR2X = 0.5f * (2f * x + (2f * (rho2 - a2) * x) / sqrtDelta);
+        float delR2Y = 0.5f * (2f * y + (2f * (rho2 - a2) * y) / sqrtDelta);
+        float delR2Z = 0.5f * (2f * z + (2f * (rho2 - a2) * z + 4f * a2 * z) / sqrtDelta);
+
+        float delR2T = 0f;
+        return new Vector4(delR2T, delR2X, delR2Y, delR2Z);
+    }
+
+    Vector4 CalcDelR(Vector4 pos, float a)
     {
         Vector4 delR2 = CalcDelR2(pos, a);
         float R2 = CalcR2(pos, a);
-        Vector4 delR = (1 / (2 * Mathf.Sqrt(R2)) * delR2);
+        float r = Mathf.Sqrt(R2);
+        Vector4 delR = new Vector4(0, delR2.y / (2 * r), delR2.z / (2 * r), delR2.w / (2 * r));
         return delR;
     }
+
 
     #endregion
 
