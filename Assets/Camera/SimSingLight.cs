@@ -13,6 +13,12 @@ public class SimSingLight : MonoBehaviour
     Matrix4x4[] Christoffelsymbols;
     Matrix4x4 diag;
 
+    public Vector4 CameraPosition = new Vector4(0, 100, 0, 0);
+    public Vector4 CamerRotation;
+    public float FOV;
+
+    Matrix4x4 MetricTensorAtCam;
+
     float M = 1;
     float a = 0.1f;
 
@@ -24,9 +30,21 @@ public class SimSingLight : MonoBehaviour
         dMetricTensor = new Matrix4x4[4];
         Christoffelsymbols = new Matrix4x4[4];
 
+
+        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
+        MetricTensorAtCam = MetricTensor;
+
+        //LogTensor(MetricTensorAtCam);
+        //CopyMatrix(MetricTensorAtCam);
+
+        Matrix4x4 Tetrad = localTetrad(CameraPosition);
+        Matrix4x4 c = C(Tetrad);
+        LogTensor(c);
+        CopyMatrix(c);
+
         //Test();
-        Vector4 pos = new Vector4(0, 1, 0, 1);
-        Test();
+        //Vector4 pos = new Vector4(0, 1, 0, 1);
+        //Test();
         //float r = CalcR(pos, a);
         //CalcDelMetricTensor(pos, r, a, M);
         //Debug.Log(r);
@@ -37,6 +55,8 @@ public class SimSingLight : MonoBehaviour
         //LogTensor(dMetricTensor[1]);
         //CopyMatrix(dMetricTensor[1]);
     }
+
+    #region Tests
 
     public void Test()
     {
@@ -57,6 +77,35 @@ public class SimSingLight : MonoBehaviour
         }
         return sum;
     }
+
+    public Matrix4x4 C(Matrix4x4 Tetrad)
+    {
+        Matrix4x4 output = new Matrix4x4();
+        for (int a = 0; a < 4; a++)
+        {
+            for (int b = 0; b < 4; b++)
+            {
+                float sum = 0;
+                for (int mu = 0; mu < 4; mu++)
+                {
+                    for (int nu = 0;nu < 4; nu++)
+                    {
+                        sum += MetricTensorAtCam[mu, nu] * Tetrad[mu, a] * Tetrad[nu, b];
+                    }
+                }
+                if (sum < 0.0001f && sum > -0.0001f)
+                {
+                    sum = 0;
+                }
+                output[a, b] = sum;
+            }
+        }
+        return output;
+    }
+
+    #endregion
+
+    #region RaySteppingCalculations
 
     public void LogRay(LightRay ray)
     {
@@ -229,6 +278,7 @@ public class SimSingLight : MonoBehaviour
         return k0 * k0;
     }
 
+
     #region Metric Tensor Calculation
 
     public void CalcDelMetricTensor (Vector4 position, float r, float a, float M)
@@ -363,23 +413,6 @@ public class SimSingLight : MonoBehaviour
         return 0.5f * (rho2 - Mathf.Pow(a, 2) + Mathf.Sqrt(Mathf.Pow(rho2 - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2)));
     }
 
-    public Vector4 CalcDelR2False(Vector4 pos, float a)
-    {
-        float a2 = Mathf.Pow(a, 2);
-        float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
-        float rho = Mathf.Sqrt(rho2);
-        float delRho2 = 2 * pos.y + 2 * pos.z + 2 * pos.w;
-        float Delta = Mathf.Pow(pos.y + pos.z + pos.w - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2);
-        float delDeltaX = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.y;
-        float delDeltaY = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.z;
-        float delDeltaZ = 2 * (rho2 - Mathf.Pow(a, 2)) * pos.w + 8 * Mathf.Pow(a, 2) * pos.w;
-        float sqrtDelta = Mathf.Sqrt(Delta);
-        float delR2X = 0.5f * (2 * pos.y + (2 * (rho2 - a2) * pos.y) / (sqrtDelta));
-        float delR2Y = 0.5f * (2 * pos.z + (2 * (rho2 - a2) * pos.z) / (sqrtDelta));
-        float delR2Z = 0.5f * (2 * pos.w + (2 * (rho2 - a2) * pos.w + 4 * a2 * pos.w) / (sqrtDelta));
-        return new Vector4(0, delR2X, delR2Y, delR2Z);
-    }
-
     Vector4 CalcDelR2(Vector4 pos, float a)
     {
         float x = pos.y; 
@@ -412,7 +445,10 @@ public class SimSingLight : MonoBehaviour
 
     #endregion
 
+    #endregion
 
+
+    #region Helpers
     public Matrix4x4 MatrixAdd(Matrix4x4 m1, Matrix4x4 m2)
     {
         Matrix4x4 result = new Matrix4x4();
@@ -452,6 +488,127 @@ public class SimSingLight : MonoBehaviour
         return result;
     }
 
+    #endregion
+
+    #region Camera
+
+    LightRay instantiateRay(Vector4 CamPos,  float Theta, float Height, float Width, Vector2 pos)
+    {
+        //normalize Coordinates
+        float u = ((pos.x + 0.5f) / (Width) - 0.5f) * Mathf.Tan(Theta / 2);
+        float v = ((pos.y + 0.5f) / (Height) - 0.5f) * Mathf.Tan(Theta / 2) * Height / Width;
+        Vector4 k = new Vector4(1, u, v, -1);
+        Vector4 ks = Vector4.zero; //k' = k strich = ks
+        Matrix4x4 Tetrad = localTetrad(CamPos);
+        for (int dim = 0; dim < 4; dim++)
+        {
+            for (int a = 0; a < 4; a++)
+            {
+                ks[dim] += Tetrad[dim, a] * k[a];
+            }
+        }
+        LightRay lightRay = new LightRay(CamPos, k);
+        return lightRay;
+    }
+
+    public Matrix4x4 localTetrad(Vector4 pos)
+    {
+        Vector4 u = new Vector4(1 / Mathf.Sqrt(-MetricTensorAtCam[0, 0]), 0, 0, 0);
+        Vector4 v1 = new Vector4(0, 1, 0, 0);
+        Vector4 v2= new Vector4(0, 0, 1, 0);
+        Vector4 v3 = new Vector4(0, 0, 0, 1);
+        Matrix4x4 v = new Matrix4x4(u, v1, v2, v3);
+        Matrix4x4 sqv = Matrix4x4.zero; //squiggely v~
+        for (int BaseVector = 1; BaseVector < 4; BaseVector++)
+        {
+            for (int Component = 0; Component < 4; Component++)
+            {
+                float Q = 0;
+                float D = 0;
+                for (int alpha = 0; alpha < 4; alpha++)
+                {
+                    for (int beta = 0; beta < 4; beta++)
+                    {
+                        Q += MetricTensorAtCam[alpha, beta] * v[alpha, BaseVector] * u[beta];
+                        D += MetricTensorAtCam[alpha, beta] * u[alpha] * u[beta];
+                    }
+                }
+                sqv[Component, BaseVector] = v[Component, BaseVector] - Q / D * u[Component]; //check if indeces are the right way around
+            }
+        }
+        Vector4 e0 = u;
+        Vector4 e1 = new Vector4();
+        Vector4 e2 = new Vector4();
+        Vector4 e3 = new Vector4();
+        Vector4 sqvs2 = new Vector4(); //squiggely v strich: ~v'_2
+        Vector4 sqvs3 = new Vector4(); //squiggely v strich ~v'_3
+        for (int dim = 0; dim < 4; dim++) //calc e1
+        {
+            float sum = 0;
+            for (int alpha = 0; alpha < 4; alpha++)
+            {
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    sum += MetricTensorAtCam[alpha, beta] * sqv[alpha, 1] * sqv[beta, 1];
+                }
+            }
+            e1[dim] = sqv[dim, 1] / Mathf.Sqrt(sum);
+        }
+        for (int dim = 0; dim < 4; dim++) //calc sqvs2
+        {
+            float sum = 0;
+            for(int alpha = 0;alpha < 4; alpha++)
+            {
+                for ( int beta = 0;beta < 4; beta++)
+                {
+                    sum += MetricTensorAtCam[alpha, beta] * sqv[alpha, 2] * e1[beta];
+                }
+            }
+            sqvs2[dim] = sqv[dim, 2] - sum * e1[dim];
+        }
+        for (int dim = 0; dim < 4; dim++)
+        {
+            float sum = 0;
+            for (int alpha = 0; alpha< 4; alpha++)
+            {
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    sum += MetricTensorAtCam[alpha, beta] * sqvs2[alpha] * sqvs2[beta];
+                }
+            }
+            e2[dim] = sqvs2[dim] / Mathf.Sqrt(sum);
+        }
+        for (int dim = 0; dim < 4; dim++)
+        {
+            float sum1 = 0;
+            float sum2 = 0;
+            for (int alpha = 0; alpha <  4; alpha++)
+            {
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    sum1 += MetricTensorAtCam[alpha, beta] * sqv[alpha, 3] * e1[beta];
+                    sum2 += MetricTensorAtCam[alpha, beta] * sqv[alpha, 3] * e2[beta];
+                }
+            }
+            sqvs3[dim] = sqv[dim, 3] - sum1 * e1[dim] - sum2 * e2[dim];
+        }
+        for (int dim = 0; dim < 4; dim++)
+        {
+            float sum = 0;
+            for (int alpha = 0; alpha < 4; alpha++)
+            {
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    sum += MetricTensorAtCam[alpha, beta] * sqvs3[alpha] * sqvs3[beta];
+                }
+            }
+            e3[dim] = sqvs3[dim] / Mathf.Sqrt(sum);
+        }
+        Matrix4x4 e = new Matrix4x4(e0, e1, e2, e3);
+        return e;
+    }
+
+    #endregion
     // Update is called once per frame
     void Update()
     {

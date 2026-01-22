@@ -448,6 +448,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0567163d239a48c44a3781e0c942b387, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimSingLight
+  CameraPosition: {x: 0, y: 100, z: 0, w: 0}
+  CamerRotation: {x: 0, y: 0, z: 0, w: 0}
+  FOV: 0
 --- !u!4 &1165874465
 Transform:
   m_ObjectHideFlags: 0
