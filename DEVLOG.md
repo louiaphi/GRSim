@@ -33,6 +33,6 @@
 ## Debugg Steps:
 
 - metric tensor [x]
-- christoffel symbols [ ]
-- del metric tensor [ ]
-- RK4 [ ]
+- christoffel symbols [x]
+- del metric tensor [x]
+- RK4 [x]
