@@ -14,13 +14,19 @@ public class SimSingLight : MonoBehaviour
     Matrix4x4 diag;
 
     public Vector4 CameraPosition = new Vector4(0, 100, 0, 0);
-    public Vector4 CamerRotation;
+    public Vector3 CamerRotation;
     public float FOV;
+    public Vector2 MonitorSize = new Vector2(1080, 1920);
 
     Matrix4x4 MetricTensorAtCam;
+    Matrix4x4 localTetradAtCam;
 
-    float M = 1;
-    float a = 0.1f;
+    public float M = 1;
+    public float a = 0.1f;
+
+    public int N = 10;
+    public float StepSize = 0.1f;
+    public GameObject Ball;
 
     void Start()
     {
@@ -34,13 +40,15 @@ public class SimSingLight : MonoBehaviour
         CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
         MetricTensorAtCam = MetricTensor;
 
+        RunTests();
+
         //LogTensor(MetricTensorAtCam);
         //CopyMatrix(MetricTensorAtCam);
 
-        Matrix4x4 Tetrad = localTetrad(CameraPosition);
-        Matrix4x4 c = C(Tetrad);
-        LogTensor(c);
-        CopyMatrix(c);
+        //Matrix4x4 Tetrad = localTetrad(CameraPosition);
+        //Matrix4x4 c = C(Tetrad);
+        //LogTensor(c);
+        //CopyMatrix(c);
 
         //Test();
         //Vector4 pos = new Vector4(0, 1, 0, 1);
@@ -58,14 +66,27 @@ public class SimSingLight : MonoBehaviour
 
     #region Tests
 
-    public void Test()
+    public void RunTests()
     {
-        LightRay testLight1 = new LightRay(new Vector4(0, 100, 100, 0), new Vector4(1, 1, 0, 0));
-        LightRay testLight2 = StepLight(testLight1, 0.01f);
-        LogRay(testLight2);
+        float r = CalcR(CameraPosition, a);
+        CalcMetricTensor(CameraPosition, r, a, M);
+        localTetradAtCam = localTetrad(CameraPosition);
+        localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
+        LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(0, 0), localTetradAtCam); //put together later
+        StepLightNTimes(Ray, N);
     }
 
-    public float TestDetChri()
+    void StepLightNTimes(LightRay ray, int n)
+    {
+        LightRay nextPos = ray;
+        for (int i = 0; i < n; i++) 
+        {
+            nextPos = StepLight(nextPos, StepSize);
+            Instantiate(Ball, new Vector3(nextPos.pos.y, nextPos.pos.z, nextPos.pos.w), transform.rotation);
+        }
+    }
+
+    public float TestDetChri() //checks constraint G[mu][mu,nu]=-1(glaube), Result: yay
     {
         float sum = 0;
         for (int mu = 0; mu < 4; mu++)
@@ -78,7 +99,7 @@ public class SimSingLight : MonoBehaviour
         return sum;
     }
 
-    public Matrix4x4 C(Matrix4x4 Tetrad)
+    public Matrix4x4 C(Matrix4x4 Tetrad) //test if local-Tetrad-function actually forms local Tetead, Result: yay
     {
         Matrix4x4 output = new Matrix4x4();
         for (int a = 0; a < 4; a++)
@@ -107,7 +128,7 @@ public class SimSingLight : MonoBehaviour
 
     #region RaySteppingCalculations
 
-    public void LogRay(LightRay ray)
+    public void LogRay(LightRay ray)//function to print Ray entity to console (pos, k)
     {
         Debug.Log("pt:");
         Debug.Log(ray.pos.x);
@@ -125,25 +146,25 @@ public class SimSingLight : MonoBehaviour
         Debug.Log(ray.k.z);
         Debug.Log("kz");
         Debug.Log(ray.k.w);
-    }
+    } 
 
-    public void LogTensor(Matrix4x4 m)
+    public void LogTensor(Matrix4x4 m)//function to print Tensor to console
     {
         Debug.Log("(" + m[0, 0] + ", " + m[0, 1] + ", " + m[0, 2] + ", " + m[0, 3] + ")");
         Debug.Log("(" + m[1, 0] + ", " + m[1, 1] + ", " + m[1, 2] + ", " + m[1, 3] + ")");
         Debug.Log("(" + m[2, 0] + ", " + m[2, 1] + ", " + m[2, 2] + ", " + m[2, 3] + ")");
         Debug.Log("(" + m[3, 0] + ", " + m[3, 1] + ", " + m[3, 2] + ", " + m[3, 3] + ")");
-    }
+    } 
 
-    public void LogTensorArray(Matrix4x4[] mArray)
+    public void LogTensorArray(Matrix4x4[] mArray)//function to print Tensor array(Chritoffel Symbols) to console
     {
         for (int i = 0; i < mArray.Length; i++)
         {
             Debug.Log($"Tensor {i}:");
             LogTensor(mArray[i]);
         }
-    }
-    public static void CopyMatrixArray(Matrix4x4[] mArray) //function written by ChatGPT for debugging
+    } 
+    public static void CopyMatrixArray(Matrix4x4[] mArray) //puts Array of Matrices into clipboard //function written by ChatGPT for debugging //actually written by copilot, but copilot gives all credit to ChatGPT
     {
         var sb = new StringBuilder();
         for (int index = 0; index < mArray.Length; index++)
@@ -161,7 +182,7 @@ public class SimSingLight : MonoBehaviour
     }
 
 
-    public static void CopyMatrix(Matrix4x4 m) //function written by ChatGPT for debugging
+    public static void CopyMatrix(Matrix4x4 m) //same same //function written by ChatGPT for debugging
     {
         var sb = new StringBuilder();
         for (int row = 0; row < 4; row++)
@@ -193,6 +214,18 @@ public class SimSingLight : MonoBehaviour
         
     }
 
+    public struct Matrix3x3 //doch nicht...
+    {
+        public Matrix3x3(Vector3 column0, Vector3 column1, Vector3 column2)
+        {
+            this.column0 = column0;
+            this.column1 = column1;
+            this.column2 = column2;
+        }
+        public Vector3 column0;
+        public Vector3 column1;
+        public Vector3 column2;
+    }
     public LightRay StepLight (LightRay Y, float h)
     {
         //Beschleunigung
@@ -257,7 +290,7 @@ public class SimSingLight : MonoBehaviour
         return Output;
     }
 
-    public  float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
+    public float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
     {
         CalcMetricTensor(Light.pos, Mathf.Sqrt(CalcR2(Light.pos, a)), a, M);
         float pd2 = 0; //p /2
@@ -275,7 +308,7 @@ public class SimSingLight : MonoBehaviour
         }
         Q *= MetricTensor[0, 0];
         float k0 = (pd2 + Mathf.Sqrt(pd2 * pd2 - Q)) / (MetricTensor[0, 0]);
-        return k0 * k0;
+        return k0; //Vorher k0 * k0 fsr
     }
 
 
@@ -492,20 +525,26 @@ public class SimSingLight : MonoBehaviour
 
     #region Camera
 
-    LightRay instantiateRay(Vector4 CamPos,  float Theta, float Height, float Width, Vector2 pos)
+    LightRay instantiateRay(Vector4 CamPos,  float FOV, float Height, float Width, Vector2 pos, Matrix4x4 rotatedlocalTetrad) //Height and Widht = n of Pixels on screen, pos = pos of this specific one
     {
+        
         //normalize Coordinates
-        float u = ((pos.x + 0.5f) / (Width) - 0.5f) * Mathf.Tan(Theta / 2);
-        float v = ((pos.y + 0.5f) / (Height) - 0.5f) * Mathf.Tan(Theta / 2) * Height / Width;
-        Vector4 k = new Vector4(1, u, v, -1);
-        Vector4 ks = Vector4.zero; //k' = k strich = ks
-        Matrix4x4 Tetrad = localTetrad(CamPos);
-        for (int dim = 0; dim < 4; dim++)
+        float u = ((pos.x + 0.5f) / (Width) - 0.5f); //normalize coordinates and apply FOV
+        float v = ((pos.y + 0.5f) / (Height) - 0.5f) * Height / Width;
+        float alpha = Mathf.Tan(FOV/2) * u;
+        float beta = Mathf.Tan(FOV/2) * v;
+        Vector4 a = new Vector4(0, alpha, beta, 1);
+        float A = Mathf.Sqrt(alpha * alpha + beta * beta + 1);
+        a[0] = A;
+        Vector4 k = Vector4.zero;
+        for (int i = 0; i < 4; i++)
         {
-            for (int a = 0; a < 4; a++)
+            float sum = 0;
+            for (int j = 0; j < 4; j++)
             {
-                ks[dim] += Tetrad[dim, a] * k[a];
+                sum += rotatedlocalTetrad[i, j] * a[j];
             }
+            k[i] = sum;
         }
         LightRay lightRay = new LightRay(CamPos, k);
         return lightRay;
@@ -606,6 +645,36 @@ public class SimSingLight : MonoBehaviour
         }
         Matrix4x4 e = new Matrix4x4(e0, e1, e2, e3);
         return e;
+    }
+
+    public Matrix4x4 rotateLocalTetrad(Matrix4x4 Tetrad, Vector3 Angles)
+    {
+        Vector4 column0 = new Vector4(1, 0, 0, 0);       //Calc normal 3D Rotation Matrices
+        Vector4 column1 = new Vector4(0, Mathf.Cos(Angles[0]), 0, -Mathf.Sin(Angles[0]));
+        Vector4 column2 = new Vector4(0, 0, 1, 0);
+        Vector4 column3 = new Vector4(0, -Mathf.Sin(Angles[0]), 0, Mathf.Cos(Angles[0]));
+        Matrix4x4 Ryaw = new Matrix4x4(column0, column1, column2, column3);
+
+        column0 = new Vector4(1, 0,0, 0);
+        column1 = new Vector4(0, 1,0, 0);
+        column2 = new Vector4(0, 0, Mathf.Cos(Angles[1]), -Mathf.Sin(Angles[1]));
+        column3 = new Vector4(0, 0, Mathf.Sin(Angles[1]), Mathf.Cos(Angles[1]));
+        Matrix4x4 Rpitch = new Matrix4x4(column0, column1, column2, column3);
+
+        column0 = new Vector4(1, 0, 0, 0);
+        column1 = new Vector4(0, Mathf.Cos(Angles[2]), -Mathf.Sin(Angles[2]),0);
+        column2 = new Vector4(0, Mathf.Sin(Angles[2]), Mathf.Cos(Angles[2]),0);
+        column3 = new Vector4(0, 0, 0, 1);
+        Matrix4x4 Rroll= new Matrix4x4(column0, column1, column2, column3);
+
+        Matrix4x4 R = Ryaw * (Rpitch * Rroll); //combine them into one
+
+        Vector4 es0 = Tetrad.GetColumn(0); //Backup time dimension
+        Matrix4x4 eSpace = new Matrix4x4(new Vector4(1, 0, 0, 0), Tetrad.GetColumn(1), Tetrad.GetColumn(2), Tetrad.GetColumn(3)); //only copy space dimesions
+        eSpace = eSpace * R; //rotate space dimensions
+        eSpace.SetColumn(0, es0); // reset time column, maybe/probably redundant, but just to be sure Camera doesn't rotate in time...//<-doppler shift, maybe later but defies null constraint when spawned->brakes rest pf the code
+        
+        return eSpace;
     }
 
     #endregion
