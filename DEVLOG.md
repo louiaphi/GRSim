@@ -25,6 +25,7 @@
 ## ToDo
 
 - check for constraints in geodesic integration [x]
+- chech for constraints in all dimensions [ ]
 - create local tedrad [ ]
 - account for colissions [ ]
 - render image [ ]
@@ -36,3 +37,4 @@
 - christoffel symbols [x]
 - del metric tensor [x]
 - RK4 [x]
+- Visualize Light Stepping [ ]
