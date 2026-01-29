@@ -50,3 +50,20 @@ M = 8, a = 4, z = 0, y = 0, x is the variable.
 At x = 0: r = 0, H = NaN 
 At 0<x<4: r = 0/very small/NaN, H = very big/ NaN 
 At x = 4: r = 0; H = NaN At x > 4: r increases like expected, H rapidly droppes of (like expected)
+
+<br />
+<br />
+<br />
+<!--- brrrrrrrrrr --->
+
+## Interesting / Funny Pictures / Problems encountered while debugging (that will take up way to much space because i such at md)
+### Struggles with the GPU:
+#### Longhole  <br />
+<img width="880" height="493" alt="Screenshot 2026-01-29 110921" src="https://github.com/user-attachments/assets/4f3de198-9565-43c7-92ad-42d482a59599" />  <br />
+#### Diagonalhole  <br />
+<img width="354" height="372" alt="Screenshot 2026-01-29 104931" src="https://github.com/user-attachments/assets/ff1046a8-a820-466f-8ebc-7a258f0335ab" />  <br />
+#### Many Worlds? Na, Many Holes!  <br />
+<img width="735" height="739" alt="Screenshot 2026-01-29 161322" src="https://github.com/user-attachments/assets/51b0aff4-8950-4f40-aa4d-0f9dbfae8afb" />  <br />
+
+
+
