@@ -1,0 +1,112 @@
+#pragma kernel CSMain
+
+RWTexture2D<float4> Result;
+
+int width;
+int height;
+
+float scale;
+float a;
+float M;
+float z;
+float rim;
+
+float EHRadius;
+
+bool enableEventHorizon;
+bool enableErghosphere;
+
+bool BaaaaasicallySameSame(float x, float y, float e)
+{
+    if (abs(x - y) < e)
+    {
+        return true;
+    }
+    return false;
+}
+
+float cos(float x) //I think I'm switching to HLSL just so I need to use Taylors everytime for Trig, ohhh boy, I love 'em
+{
+    float y = 1 - pow(x, 2) / 2 + pow(x, 4) / 24 + pow(x, 6) / 720; //I could type this forever i just feels so good, hearing "Don't Stop Me Now" does really not help
+    return y;
+}
+
+float CalcERGSRadius(float M, float a, float theta)
+{
+    return M + sqrt(M * M - a * a * pow(cos(theta), 2));
+}
+
+float CalcERGSRadiusAtZ(float M, float a, float theta, float z)
+{
+    float r = CalcERGSRadius(M, a, theta);
+    return (r * r + a * a) * (1 - (z * z) / (r * r));
+}
+
+float CalcH(float r, float z, float M, float a)
+{
+    float r2 = r * r;
+    float r4 = r2 * r2;
+    return (M * r * r2) / (r4 + a * a * z * z);
+}
+
+float CalcR2(float4 pos, float a)
+{
+    float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
+    float aa = a * a;
+    float term = rho2 - aa;
+    return 0.5 * (term + sqrt(term * term + 4.0 * aa * pos.w * pos.w));
+}
+
+// --- Kernel ---
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    
+    if (id.x >= width || id.y >= height)
+        return;
+
+    float x = id.x - width * 0.5;
+    float y = id.y - height * 0.5;
+
+    float r = sqrt(CalcR2(float4(0, x, y, z), a));
+
+    float value;
+
+    if (abs(r) < 0.1) //singularity
+    {
+        value = -1; //value normally never negative so used for this
+        if (x * x + y * y < a * a - rim && z == 0) //not singularity but portal
+        {
+            value = -2;
+        }
+    }
+    else
+    {
+        r *= scale;
+        value = CalcH(r, z, M, a);
+    }
+    if (enableEventHorizon && BaaaaasicallySameSame(x * x + y * y, (EHRadius * EHRadius) * (1 - ((z * z) / (EHRadius * EHRadius))), rim))
+    {
+        value = -3;
+    }
+    if (enableErghosphere && BaaaaasicallySameSame(x * x + y * y, CalcERGSRadiusAtZ(M, a, acos(z / sqrt(CalcR2(float4(0, x, y, z), a))), z), rim)) //why... why in the world would you make a programming language that has a definition for acos but cos. I mean I'm not complaining... Maybe I am. I was about to calculate it but then they already had it built in... :pensive:
+    {
+        value = -4;
+    }
+
+    //return stuff
+    float3 color;
+    if (value == -1)
+        color = float3(1, 0, 0);
+    else if (value == -2)
+        color = float3(0.3, 0, 0.3);
+    else if (value == -3)
+        color = float3(0, 1, 0);
+    else if (value == -4)
+        color = float3(0, 0, 1);
+    else
+        color = value.xxx;
+
+    Result[id.xy] = float4(color, 1);
+}

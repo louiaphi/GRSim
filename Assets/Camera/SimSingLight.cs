@@ -27,6 +27,8 @@ public class SimSingLight : MonoBehaviour
     public int N = 10;
     public float StepSize = 0.1f;
     public GameObject Ball;
+    public GameObject Parent;
+    float delT = 0;
 
     void Start()
     {
@@ -40,7 +42,6 @@ public class SimSingLight : MonoBehaviour
         CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
         MetricTensorAtCam = MetricTensor;
 
-        RunTests();
 
         //LogTensor(MetricTensorAtCam);
         //CopyMatrix(MetricTensorAtCam);
@@ -68,21 +69,29 @@ public class SimSingLight : MonoBehaviour
 
     public void RunTests()
     {
-        float r = CalcR(CameraPosition, a);
-        CalcMetricTensor(CameraPosition, r, a, M);
         localTetradAtCam = localTetrad(CameraPosition);
         localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
-        LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(0, 0), localTetradAtCam); //put together later
-        StepLightNTimes(Ray, N);
+        for (int i = 0; i < MonitorSize.x; i++)
+        {
+            for (int j = 0; j < MonitorSize.y; j++)
+            {
+                LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(i, j), localTetradAtCam); //put together later
+                Color colour = new Color(i / MonitorSize.x, j / MonitorSize.y, 0);
+                StepLightNTimes(Ray, N, colour);
+            }
+        }
+        
     }
 
-    void StepLightNTimes(LightRay ray, int n)
+    void StepLightNTimes(LightRay ray, int n, Color c)
     {
         LightRay nextPos = ray;
         for (int i = 0; i < n; i++) 
         {
             nextPos = StepLight(nextPos, StepSize);
-            Instantiate(Ball, new Vector3(nextPos.pos.y, nextPos.pos.z, nextPos.pos.w), transform.rotation);
+            GameObject ball = Instantiate(Ball, new Vector3(nextPos.pos.y, nextPos.pos.z, nextPos.pos.w), transform.rotation);
+            ball.transform.parent = Parent.transform;
+            ball.GetComponent<Renderer>().material.color = new Color(c.r, c.g, i / n);
         }
     }
 
@@ -442,7 +451,7 @@ public class SimSingLight : MonoBehaviour
 
     public float CalcR2(Vector4 pos, float a)
     {
-        float rho2 = pos.y + pos.z + pos.w;
+        float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
         return 0.5f * (rho2 - Mathf.Pow(a, 2) + Mathf.Sqrt(Mathf.Pow(rho2 - Mathf.Pow(a, 2), 2) + 4 * Mathf.Pow(a, 2) * Mathf.Pow(pos.w, 2)));
     }
 
@@ -519,6 +528,16 @@ public class SimSingLight : MonoBehaviour
             }
         }
         return result;
+    }
+
+    void DeleteAllChildren(GameObject parent)
+    {
+        // Iterate backwards to be safe
+        for (int i = parent.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = parent.transform.GetChild(i);
+            Destroy(child.gameObject);
+        }
     }
 
     #endregion
@@ -681,6 +700,15 @@ public class SimSingLight : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
+        delT += 0.01f;
+        if (delT > 1)
+        {
+            DeleteAllChildren(Parent);
+            RunTests();
+            delT = 0;
+            Debug.Log("hi");
+        }
+        Debug.Log(delT);
     }
 }
