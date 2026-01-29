@@ -10,11 +10,17 @@ float a;
 float M;
 float z;
 float rim;
+float rim2;
 
 float EHRadius;
 
 bool enableEventHorizon;
-bool enableErghosphere;
+bool enableErgosphere;
+
+float3 ColorSingularity;
+float3 ColorPortal;
+float3 ColorEventHorizon;
+float3 ColorErgosphere;
 
 bool BaaaaasicallySameSame(float x, float y, float e)
 {
@@ -23,23 +29,6 @@ bool BaaaaasicallySameSame(float x, float y, float e)
         return true;
     }
     return false;
-}
-
-float cos(float x) //I think I'm switching to HLSL just so I need to use Taylors everytime for Trig, ohhh boy, I love 'em
-{
-    float y = 1 - pow(x, 2) / 2 + pow(x, 4) / 24 + pow(x, 6) / 720; //I could type this forever i just feels so good, hearing "Don't Stop Me Now" does really not help
-    return y;
-}
-
-float CalcERGSRadius(float M, float a, float theta)
-{
-    return M + sqrt(M * M - a * a * pow(cos(theta), 2));
-}
-
-float CalcERGSRadiusAtZ(float M, float a, float theta, float z)
-{
-    float r = CalcERGSRadius(M, a, theta);
-    return (r * r + a * a) * (1 - (z * z) / (r * r));
 }
 
 float CalcH(float r, float z, float M, float a)
@@ -90,23 +79,29 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         value = -3;
     }
-    if (enableErghosphere && BaaaaasicallySameSame(x * x + y * y, CalcERGSRadiusAtZ(M, a, acos(z / sqrt(CalcR2(float4(0, x, y, z), a))), z), rim)) //why... why in the world would you make a programming language that has a definition for acos but cos. I mean I'm not complaining... Maybe I am. I was about to calculate it but then they already had it built in... :pensive:
+    
+    
+
+    if (enableErgosphere)
     {
-        value = -4;
+        float rho2 = r * r + a * a * (z * z) / (r * r + a * a); //moved in for maybe better efficiancy when disabled... if you really believe in it
+        float gtt = 1.0 - (2.0 * M * r) / rho2; //ergosphere definition
+        if (abs(gtt) < rim2)
+            value = -4;
     }
 
     //return stuff
     float3 color;
     if (value == -1)
-        color = float3(1, 0, 0);
+        color = ColorSingularity;
     else if (value == -2)
-        color = float3(0.3, 0, 0.3);
+        color = ColorPortal;
     else if (value == -3)
-        color = float3(0, 1, 0);
+        color = ColorEventHorizon;
     else if (value == -4)
-        color = float3(0, 0, 1);
+        color = ColorErgosphere;
     else
-        color = value.xxx;
-
+        color = value.xxx; //fancy syntax i must say
     Result[id.xy] = float4(color, 1);
+
 }
