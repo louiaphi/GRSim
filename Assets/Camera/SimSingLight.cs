@@ -29,6 +29,7 @@ public class SimSingLight : MonoBehaviour
     public GameObject Ball;
     public GameObject Parent;
     float delT = 0;
+    public float refreshTime;
 
     void Start()
     {
@@ -71,6 +72,11 @@ public class SimSingLight : MonoBehaviour
     {
         localTetradAtCam = localTetrad(CameraPosition);
         localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
+
+        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(0), Color.red);
+        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(1), Color.green);
+        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(2), Color.blue);
+
         for (int i = 0; i < MonitorSize.x; i++)
         {
             for (int j = 0; j < MonitorSize.y; j++)
@@ -664,36 +670,34 @@ public class SimSingLight : MonoBehaviour
         }
         Matrix4x4 e = new Matrix4x4(e0, e1, e2, e3);
         return e;
+        
     }
 
     public Matrix4x4 rotateLocalTetrad(Matrix4x4 Tetrad, Vector3 Angles)
     {
-        Vector4 column0 = new Vector4(1, 0, 0, 0);       //Calc normal 3D Rotation Matrices
-        Vector4 column1 = new Vector4(0, Mathf.Cos(Angles[0]), 0, -Mathf.Sin(Angles[0]));
-        Vector4 column2 = new Vector4(0, 0, 1, 0);
-        Vector4 column3 = new Vector4(0, -Mathf.Sin(Angles[0]), 0, Mathf.Cos(Angles[0]));
-        Matrix4x4 Ryaw = new Matrix4x4(column0, column1, column2, column3);
-
-        column0 = new Vector4(1, 0,0, 0);
-        column1 = new Vector4(0, 1,0, 0);
-        column2 = new Vector4(0, 0, Mathf.Cos(Angles[1]), -Mathf.Sin(Angles[1]));
-        column3 = new Vector4(0, 0, Mathf.Sin(Angles[1]), Mathf.Cos(Angles[1]));
-        Matrix4x4 Rpitch = new Matrix4x4(column0, column1, column2, column3);
-
-        column0 = new Vector4(1, 0, 0, 0);
-        column1 = new Vector4(0, Mathf.Cos(Angles[2]), -Mathf.Sin(Angles[2]),0);
-        column2 = new Vector4(0, Mathf.Sin(Angles[2]), Mathf.Cos(Angles[2]),0);
-        column3 = new Vector4(0, 0, 0, 1);
-        Matrix4x4 Rroll= new Matrix4x4(column0, column1, column2, column3);
-
-        Matrix4x4 R = Ryaw * (Rpitch * Rroll); //combine them into one
-
-        Vector4 es0 = Tetrad.GetColumn(0); //Backup time dimension
-        Matrix4x4 eSpace = new Matrix4x4(new Vector4(1, 0, 0, 0), Tetrad.GetColumn(1), Tetrad.GetColumn(2), Tetrad.GetColumn(3)); //only copy space dimesions
-        eSpace = eSpace * R; //rotate space dimensions
-        eSpace.SetColumn(0, es0); // reset time column, maybe/probably redundant, but just to be sure Camera doesn't rotate in time...//<-doppler shift, maybe later but defies null constraint when spawned->brakes rest pf the code
-        
-        return eSpace;
+        Matrix4x4 Rtest = Matrix4x4.Rotate(Quaternion.Euler(Angles));  // :skull: ... why did i listen to ChatGPT and deactivate my brain and write down all the rotation matrices myself
+        Matrix4x4 R = Matrix4x4.zero;
+        for(int i = 1; i < 4; i++)
+        {
+            for (int j = 1; j < 4; j++)
+            {
+                R[i, j] = Rtest[i - 1, j - 1];
+            }
+        }
+        Matrix4x4 e = new Matrix4x4();
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for (int a = 0; a < 4; a++)
+            {
+                float sum = 0;
+                for (int b = 1; b < 4; b++)
+                {
+                    sum += Tetrad[mu, b] * R[b, a];
+                }
+                e[mu, a] = sum;
+            }
+        }
+        return e;
     }
 
     #endregion
@@ -702,7 +706,7 @@ public class SimSingLight : MonoBehaviour
     {
 
         delT += 0.01f;
-        if (delT > 1)
+        if (delT > refreshTime)
         {
             DeleteAllChildren(Parent);
             RunTests();

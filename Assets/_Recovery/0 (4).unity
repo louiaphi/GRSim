@@ -431,13 +431,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 705507993}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: -0.7071068}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 270, y: 0, z: 0}
 --- !u!1 &910757127
 GameObject:
   m_ObjectHideFlags: 0
@@ -465,13 +465,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 910757127}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55772de306e80274ca2a539a842ec29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScalarFieldVisualizer
-  width: 1920
-  height: 1080
+  width: 500
+  height: 500
   scale: 1
   UpdateByTime: 1
   UpdateTime: 0
@@ -483,7 +483,7 @@ MonoBehaviour:
   enableEventHorizon: 1
   enableErgosphere: 1
   Singularity: {r: 1, g: 0, b: 0, a: 0}
-  Portal: {r: 0, g: 1, b: 0.96173286, a: 0}
+  Portal: {r: 1, g: 0, b: 0.9632969, a: 0}
   EventHorizon: {r: 0.23753953, g: 1, b: 0, a: 0}
   Ergosphere: {r: 0.017801918, g: 0, b: 0.70440245, a: 0}
   delT: 0
@@ -579,7 +579,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.1838, y: 5.09, z: 0}
-  m_LocalScale: {x: 19.2, y: 1, z: 10.8}
+  m_LocalScale: {x: 13.040979, y: 1, z: 13.213997}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -670,7 +670,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 100, z: -0}
+  m_LocalPosition: {x: 0, y: 120, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -700,22 +700,21 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1165874463}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0567163d239a48c44a3781e0c942b387, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimSingLight
   CameraPosition: {x: 0, y: 10, z: 0, w: 0}
-  CamerRotation: {x: 0, y: 0, z: 0}
+  CamerRotation: {x: 9.17, y: 4.04, z: 12.75}
   FOV: 1
   MonitorSize: {x: 10, y: 10}
   M: 1
   a: 0.1
-  N: 5
-  StepSize: 10
+  N: 50
+  StepSize: 1
   Ball: {fileID: 165408782}
   Parent: {fileID: 402452079}
-  refreshTime: 0
 --- !u!4 &1165874465
 Transform:
   m_ObjectHideFlags: 0
