@@ -31,6 +31,8 @@ public class SimSingLight : MonoBehaviour
     float delT = 0;
     public float refreshTime;
 
+    public GameObject BlackHole;
+
     void Start()
     {
         diag = Matrix4x4.identity;
@@ -38,10 +40,6 @@ public class SimSingLight : MonoBehaviour
         MetricTensor = Matrix4x4.identity;
         dMetricTensor = new Matrix4x4[4];
         Christoffelsymbols = new Matrix4x4[4];
-
-
-        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
-        MetricTensorAtCam = MetricTensor;
 
 
         //LogTensor(MetricTensorAtCam);
@@ -70,12 +68,28 @@ public class SimSingLight : MonoBehaviour
 
     public void RunTests()
     {
+        BlackHole.transform.localScale = Vector3.one * 4 * M;
+        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
+        MetricTensorAtCam = MetricTensor;
+
         localTetradAtCam = localTetrad(CameraPosition);
         localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
 
-        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(0), Color.red);
-        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(1), Color.green);
-        Debug.DrawLine(CameraPosition, CameraPosition + 5 * localTetradAtCam.GetColumn(2), Color.blue);
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(1)), Color.red);
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(2)), Color.green);
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(3)), Color.blue);
+        Debug.Log("--------------------------------------");
+        Debug.Log("Tetrad:");
+        Debug.Log("x" + localTetradAtCam.GetColumn(1));
+        Debug.Log("y" + localTetradAtCam.GetColumn(2));
+        Debug.Log("z" + localTetradAtCam.GetColumn(3));
+        Debug.Log("--------------------------------------");
+        Debug.Log("Metric");
+        LogTensor(MetricTensorAtCam);
+        Debug.Log("--------------------------------------");
+        Debug.Log("C:");
+        LogTensor(C(localTetradAtCam));
+
 
         for (int i = 0; i < MonitorSize.x; i++)
         {
@@ -89,7 +103,17 @@ public class SimSingLight : MonoBehaviour
         
     }
 
-    void StepLightNTimes(LightRay ray, int n, Color c)
+    public Vector4 txyz2xyzw (Vector4 v)
+    {
+        return new Vector4(v.y, v.z, v.w, v.x);
+    }
+
+    public Vector4 xyzw2txyz(Vector4 v)
+    {
+        return new Vector4(v.w, v.x, v.y, v.z);
+    }
+
+    public void StepLightNTimes(LightRay ray, int n, Color c)
     {
         LightRay nextPos = ray;
         for (int i = 0; i < n; i++) 
@@ -704,15 +728,12 @@ public class SimSingLight : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         delT += 0.01f;
         if (delT > refreshTime)
         {
             DeleteAllChildren(Parent);
             RunTests();
             delT = 0;
-            Debug.Log("hi");
         }
-        Debug.Log(delT);
     }
 }
