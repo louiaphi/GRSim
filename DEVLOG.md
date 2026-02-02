@@ -21,7 +21,8 @@
 - 16.1.2026 Function to calculate derivatives of Metric Tensor
 - 18.1.2026 Runge Kutta RK4 Integration finished
 - 20.1.2026 Checked for Constraints and started debugging
-- Be sick for a week 😔 <!--- sry for using Emojis, im not ChatGPT frfr --->
+- Be sick for a week 😔
+<!--- sry for using Emojis, im not ChatGPT frfr--->
 - 28.1.2026 Made function to construct Camera Tetrad and tested it... didn't work 😔 again
 - 29.1.2026 Made Heatmap Visualization of H field Strength. Inside the ring singularity r ≈ 0 -> circle singularity (Note 1)
 - 1.2 Started Camera Debugging (If you include "making it worse" in the definition of debugging)
