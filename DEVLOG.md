@@ -11,7 +11,6 @@
 # Change of Plans
 
 - No GPU Acceleration
-- maybe do GPUT Acc anyways
 - Simulate Light one after another
 - Simulate Redshift
 
@@ -68,6 +67,28 @@ At x = 4: r = 0; H = NaN At x > 4: r increases like expected, H rapidly droppes 
 <img width="354" height="372" alt="Screenshot 2026-01-29 104931" src="https://github.com/user-attachments/assets/ff1046a8-a820-466f-8ebc-7a258f0335ab" />  <br />
 #### Many Worlds? Na, Many Holes!  <br />
 <img width="735" height="739" alt="Screenshot 2026-01-29 161322" src="https://github.com/user-attachments/assets/51b0aff4-8950-4f40-aa4d-0f9dbfae8afb" />  <br />
+
+## Possible next steps:
+
+1. Accelerate with GPU
+2. make two regions with different metrics to simulate two black holes and multi gravitational lensing
+2. make crude fluid-simulation and newtonian gravity-sim to simulate captured star, Goal: simulate formation of accretion disk
+
+### 1. Accelerate with GPU
+- Transfer entire Runge-Kutta to GPU
+- try to crash the Laptop less than 10 times
+#### Expected Time: < 1 week
+
+### 2. Seperate region simulation
+- easy way to incorporate multiple heavy obejects
+- Goal: simulate gravitational telescope consiting of multiple black holes in formation
+#### Expected Time: < 1 week
+
+### 3. Gravitational Fluid Simulation
+- Make a Fluid Simulation (not sure which type) combine it with a newtonian gravity simulation to simulate a star
+- let the star get "eaten" by the black hole
+- Goal: simulate fomation of accretion disk
+#### Expected Time: >= 1 Month
 
 
 
