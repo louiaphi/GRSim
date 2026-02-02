@@ -31,10 +31,11 @@
 
 - check for constraints in geodesic integration [x]
 - chech for constraints in all dimensions [ ]
-- create local tedrad [ ]
+- create local tedrad [x]
 - account for colissions [ ]
 - render image [ ]
 - account for redshift [ ]
+- make steps inverse proportional to H so that stronger gravity = smaller step size
 
 ## Debugg Steps:
 
