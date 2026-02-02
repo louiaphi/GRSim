@@ -11,6 +11,7 @@
 # Change of Plans
 
 - No GPU Acceleration
+- maybe do GPUT Acc anyways
 - Simulate Light one after another
 - Simulate Redshift
 
