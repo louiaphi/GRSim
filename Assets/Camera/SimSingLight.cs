@@ -329,7 +329,46 @@ public class SimSingLight : MonoBehaviour
         return Output;
     }
 
-    public float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
+    public Vector4 HitObject(Vector4 newPos, Vector4 oldPos) //Vector3 for color + float for Metainformation
+    {
+        if (HitBlackHole(newPos))
+        {
+            return new Vector4(0, 0, 0, 1)
+        }
+        else if (HitFlatAccretionDisk(newPos, oldPos).w == 1)
+        {
+
+        }
+        else if(HitSOI(newPos))
+        {
+            return(MapSOI(newPos))
+        }
+    }
+
+    public bool HitBlackHole(Vector4 newPos)
+    {
+        float EventHorizonRadius = 2 * M;
+        if (CalcR(newPos, a) <= EventHorizonRadius)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    Vector4 HitFlatAccretionDisk(Vector4 newPos, Vector4 oldPos)
+    {
+        if (newPos.w * oldPos.w > 0) //big brain moment
+        {
+            return new Vector4(0, 0, 0, 0)
+        }
+        Vector4 InterceptionPoint = newPos + oldPos; //apprx point where it crosses the rotation plain
+        InterceptionPoint /= 2;
+        InterceptionPoint.w = 0;
+        float Radius = CalcR()
+    }
+
+
+    public float AdjustForConstraints(LightRay Light) //destroys stuff fsr //warum bin ich so schrecklich im Namen geben???
     {
         CalcMetricTensor(Light.pos, Mathf.Sqrt(CalcR2(Light.pos, a)), a, M);
         float pd2 = 0; //p /2
@@ -560,7 +599,27 @@ public class SimSingLight : MonoBehaviour
         return result;
     }
 
-    void DeleteAllChildren(GameObject parent)
+    public Vector4 MultVec4EntryByEntry(Vector4 vec1, Vector4 vec2)
+    {
+        Vector4 res;
+        for (int i = 0; i < 4; i++)
+        {
+            res[i] = vec1[i] * vec2[i];
+        }
+        return res;
+    }
+
+    public Vector4 Vec324(Vector3 vec3) //peak Name
+    {
+        return new Vector4(vec3.x, vec3.y, vec3.z, 0);
+    }
+
+    public Vector3 Vec423(Vector4 vec4)
+    {
+        return new Vector3(vec4.x, vec4.y, vec4.z);
+    }
+
+    void DeleteAllChildren(GameObject parent) //not written by me
     {
         // Iterate backwards to be safe
         for (int i = parent.transform.childCount - 1; i >= 0; i--)

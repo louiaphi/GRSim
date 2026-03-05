@@ -57,7 +57,7 @@ public class ScalarFieldVisualizer : MonoBehaviour
     }
 
 
-    void Dispatch() //made by ChatGPT for Fun yay (same as old code but on GPU as Compute Shader so i can get nicer pictures that are absolutly mandatory for good debugging)
+    void Dispatch()
     {
         if (target == null)
         {
