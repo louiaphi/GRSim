@@ -819,7 +819,7 @@ MonoBehaviour:
   CameraPosition: {x: 0, y: 10, z: 0, w: 0}
   CamerRotation: {x: 0, y: 0, z: 0}
   FOV: 1
-  MonitorSize: {x: 10, y: 10}
+  MonitorSize: {x: 0, y: 0}
   M: 1
   a: 0
   N: 10

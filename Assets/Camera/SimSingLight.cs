@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using NUnit.Framework.Constraints;
 using System.Text;
 using Unity.VisualScripting;
 using UnityEditor;
@@ -16,7 +17,7 @@ public class SimSingLight : MonoBehaviour
     public Vector4 CameraPosition = new Vector4(0, 100, 0, 0);
     public Vector3 CamerRotation;
     public float FOV;
-    public Vector2 MonitorSize = new Vector2(1080, 1920);
+    public Vector2Int MonitorSize = new Vector2Int(1080, 1920);
 
     Matrix4x4 MetricTensorAtCam;
     Matrix4x4 localTetradAtCam;
@@ -28,10 +29,20 @@ public class SimSingLight : MonoBehaviour
     public float StepSize = 0.1f;
     public GameObject Ball;
     public GameObject Parent;
-    float delT = 0;
-    public float refreshTime;
+    public float delT = 0;
+    public float refreshTime = 0; //increase for less FPS
 
     public GameObject BlackHole;
+    public float precision;
+    public bool simulate;
+
+    public float TempNull;
+    public float IntensityNull;
+    public float Rsoi;
+
+    public Material CamMaterial;
+    Texture2D CamTexture;
+    public int maxSteps;
 
     void Start()
     {
@@ -40,33 +51,19 @@ public class SimSingLight : MonoBehaviour
         MetricTensor = Matrix4x4.identity;
         dMetricTensor = new Matrix4x4[4];
         Christoffelsymbols = new Matrix4x4[4];
-
-
-        //LogTensor(MetricTensorAtCam);
-        //CopyMatrix(MetricTensorAtCam);
-
-        //Matrix4x4 Tetrad = localTetrad(CameraPosition);
-        //Matrix4x4 c = C(Tetrad);
-        //LogTensor(c);
-        //CopyMatrix(c);
-
-        //Test();
-        //Vector4 pos = new Vector4(0, 1, 0, 1);
-        //Test();
-        //float r = CalcR(pos, a);
-        //CalcDelMetricTensor(pos, r, a, M);
-        //Debug.Log(r);
-        //CalculateChristoffelsymbols(pos, r, a, M);
-        //LogTensorArray(Christoffelsymbols);
-        //CopyMatrixArray(Christoffelsymbols);
-        //Debug.Log("Sum: " + TestDetChri());
-        //LogTensor(dMetricTensor[1]);
-        //CopyMatrix(dMetricTensor[1]);
     }
 
     #region Tests
 
     public void RunTests()
+    {
+        TestCamera();
+        //TestMetricTensor();
+        //TestRay();
+        FindAsymetries();
+    }
+
+    public void TestRay()
     {
         BlackHole.transform.localScale = Vector3.one * 4 * M;
         CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
@@ -74,21 +71,6 @@ public class SimSingLight : MonoBehaviour
 
         localTetradAtCam = localTetrad(CameraPosition);
         localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
-
-        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(1)), Color.red);
-        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(2)), Color.green);
-        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(3)), Color.blue);
-        Debug.Log("--------------------------------------");
-        Debug.Log("Tetrad:");
-        Debug.Log("x" + localTetradAtCam.GetColumn(1));
-        Debug.Log("y" + localTetradAtCam.GetColumn(2));
-        Debug.Log("z" + localTetradAtCam.GetColumn(3));
-        Debug.Log("--------------------------------------");
-        Debug.Log("Metric");
-        LogTensor(MetricTensorAtCam);
-        Debug.Log("--------------------------------------");
-        Debug.Log("C:");
-        LogTensor(C(localTetradAtCam));
 
 
         for (int i = 0; i < MonitorSize.x; i++)
@@ -100,17 +82,67 @@ public class SimSingLight : MonoBehaviour
                 StepLightNTimes(Ray, N, colour);
             }
         }
-        
     }
 
-    public Vector4 txyz2xyzw (Vector4 v)
+    public void TestMetricTensor()
     {
-        return new Vector4(v.y, v.z, v.w, v.x);
+        LogTensor(MetricTensorAtCam);
+        CopyMatrix(MetricTensorAtCam);
+
+        Matrix4x4 Tetrad = localTetrad(CameraPosition);
+        Matrix4x4 c = C(Tetrad);
+        LogTensor(c);
+        CopyMatrix(c);
+
+        Vector4 pos = new Vector4(0, 1, 0, 1);
+        float r = CalcR(pos, a);
+        CalcDelMetricTensor(pos, r, a, M);
+        Debug.Log(r);
+        CalculateChristoffelsymbols(pos, r, a, M);
+        LogTensorArray(Christoffelsymbols);
+        CopyMatrixArray(Christoffelsymbols);
+        Debug.Log("Sum: " + TestDetChri());
+        LogTensor(dMetricTensor[1]);
+        CopyMatrix(dMetricTensor[1]);
     }
 
-    public Vector4 xyzw2txyz(Vector4 v)
+    public void TestCamera()
     {
-        return new Vector4(v.w, v.x, v.y, v.z);
+        BlackHole.transform.localScale = Vector3.one * 4 * M; //set test Black hole to apprx size
+        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
+        MetricTensorAtCam = MetricTensor;
+
+        localTetradAtCam = localTetrad(CameraPosition);
+        localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
+
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(1)), Color.red); //Draw local tetrad
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(2)), Color.green);
+        Debug.DrawLine(txyz2xyzw(CameraPosition), txyz2xyzw(CameraPosition + 5 * localTetradAtCam.GetColumn(3)), Color.blue);
+        Debug.Log("--------------------------------------");
+        Debug.Log("Tetrad:");
+        Debug.Log("x" + localTetradAtCam.GetColumn(1)); //log Tetrad
+        Debug.Log("y" + localTetradAtCam.GetColumn(2));
+        Debug.Log("z" + localTetradAtCam.GetColumn(3));
+        Debug.Log("--------------------------------------");
+        Debug.Log("Metric");
+        LogTensor(MetricTensorAtCam);
+        Debug.Log("--------------------------------------");
+        Debug.Log("C:");
+        LogTensor(C(localTetradAtCam));
+        Debug.Log("--------------------------------------");
+        Debug.Log("e00:");
+        Debug.Log(localTetradAtCam[0, 0]);
+
+
+        for (int i = 0; i < MonitorSize.x; i++)
+        {
+            for (int j = 0; j < MonitorSize.y; j++)
+            {
+                LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(i, j), localTetradAtCam); //put together later
+                Color colour = new Color(i / MonitorSize.x, j / MonitorSize.y, 0);
+                StepLightNTimes(Ray, N, colour);
+            }
+        }
     }
 
     public void StepLightNTimes(LightRay ray, int n, Color c)
@@ -118,8 +150,16 @@ public class SimSingLight : MonoBehaviour
         LightRay nextPos = ray;
         for (int i = 0; i < n; i++) 
         {
-            nextPos = StepLight(nextPos, StepSize);
-            GameObject ball = Instantiate(Ball, new Vector3(nextPos.pos.y, nextPos.pos.z, nextPos.pos.w), transform.rotation);
+            Debug.Log("gkk = " + gkk(ray.k));
+            Debug.Log("H = " + CalcH(CalcR(nextPos.pos, a), nextPos.pos.z, M, a));
+            //StepSize = precision / CalcH(CalcR(nextPos.pos, a), nextPos.pos.z, M, a); //adjust stepSize to strength of Graavitational Field
+            nextPos = StepLight(nextPos, StepSize); //calculate nextPosition
+            bool InEventHorizon = CalcR(nextPos.pos, a) < 2 * M || float.IsNaN(nextPos.pos.x) || float.IsNaN(nextPos.pos.y) || float.IsNaN(nextPos.pos.z) || float.IsNaN(nextPos.pos.w);
+            if (InEventHorizon)
+            {
+                return; //Terminate if in Event Horizon
+            }
+            GameObject ball = Instantiate(Ball, new Vector3(nextPos.pos.y, nextPos.pos.z, nextPos.pos.w), transform.rotation); //plan Ball
             ball.transform.parent = Parent.transform;
             ball.GetComponent<Renderer>().material.color = new Color(c.r, c.g, i / n);
         }
@@ -133,6 +173,19 @@ public class SimSingLight : MonoBehaviour
             for(int nu = 0; nu < 4; nu++)
             {
                 sum += Christoffelsymbols[mu][mu, nu];
+            }
+        }
+        return sum;
+    }
+
+    public float gkk(Vector4 k)
+    {
+        float sum = 0;
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for (int nu = 0; nu < 4; ++nu)
+            {
+                sum += MetricTensor[mu, nu] * k[mu] * k[nu];
             }
         }
         return sum;
@@ -165,7 +218,7 @@ public class SimSingLight : MonoBehaviour
 
     #endregion
 
-    #region RaySteppingCalculations
+    #region Debugging Helpers
 
     public void LogRay(LightRay ray)//function to print Ray entity to console (pos, k)
     {
@@ -185,7 +238,7 @@ public class SimSingLight : MonoBehaviour
         Debug.Log(ray.k.z);
         Debug.Log("kz");
         Debug.Log(ray.k.w);
-    } 
+    }
 
     public void LogTensor(Matrix4x4 m)//function to print Tensor to console
     {
@@ -193,7 +246,7 @@ public class SimSingLight : MonoBehaviour
         Debug.Log("(" + m[1, 0] + ", " + m[1, 1] + ", " + m[1, 2] + ", " + m[1, 3] + ")");
         Debug.Log("(" + m[2, 0] + ", " + m[2, 1] + ", " + m[2, 2] + ", " + m[2, 3] + ")");
         Debug.Log("(" + m[3, 0] + ", " + m[3, 1] + ", " + m[3, 2] + ", " + m[3, 3] + ")");
-    } 
+    }
 
     public void LogTensorArray(Matrix4x4[] mArray)//function to print Tensor array(Chritoffel Symbols) to console
     {
@@ -202,7 +255,7 @@ public class SimSingLight : MonoBehaviour
             Debug.Log($"Tensor {i}:");
             LogTensor(mArray[i]);
         }
-    } 
+    }
     public static void CopyMatrixArray(Matrix4x4[] mArray) //puts Array of Matrices into clipboard //function written by ChatGPT for debugging //actually written by copilot, but copilot gives all credit to ChatGPT
     {
         var sb = new StringBuilder();
@@ -220,7 +273,6 @@ public class SimSingLight : MonoBehaviour
         Debug.Log("Matrix array copied to clipboard");
     }
 
-
     public static void CopyMatrix(Matrix4x4 m) //same same //function written by ChatGPT for debugging
     {
         var sb = new StringBuilder();
@@ -235,11 +287,58 @@ public class SimSingLight : MonoBehaviour
         Debug.Log("Matrix copied to clipboard");
     }
 
-    public float CalcR(Vector4 pos, float a)
+    public void LogBiggestChristoffel()
     {
-        float r = Mathf.Sqrt(CalcR2(pos, a));
-        return r;
+        float max = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    if (Mathf.Abs(Christoffelsymbols[i][j, k]) > max) max = Christoffelsymbols[i][j, k];
+                }
+            }
+        }
+        Debug.Log("biggest christoffel = " + max);
     }
+
+    public void FindAsymetries()
+    {
+        Vector4 posx = new Vector4(0, 10, 0, 0);
+        Vector4 posy = new Vector4(0, 0, 5, 0);
+        Vector4 posz = new Vector4(0, 0, 0, 10);
+        Vector4 posnx = new Vector4(0, -10, 0, 0);
+        Vector4 posny = new Vector4(0, 0, -10, 0);
+        Vector4 posnz = new Vector4(0, 0, 0, -10);
+        Debug.Log("r");
+        Debug.Log(Mathf.Sqrt(CalcR(posx, a)));
+        Debug.Log(Mathf.Sqrt(CalcR(posy, a)));
+        Debug.Log(Mathf.Sqrt(CalcR(posz, a)));
+        Debug.Log(Mathf.Sqrt(CalcR(posnx, a)));
+        Debug.Log(Mathf.Sqrt(CalcR(posny, a)));
+        Debug.Log(Mathf.Sqrt(CalcR(posnz, a)));
+        Debug.Log("DMetric:");
+        CalcDelMetricTensor(posx, CalcR(posx, a), a, M);
+        Matrix4x4[] m1 = dMetricTensor;
+        CalcDelMetricTensor(posy, CalcR(posy, a), a, M);
+        Matrix4x4[] m2 = dMetricTensor;
+        LogTensorArray(m1);
+        LogTensorArray(m2);
+        Debug.Log("Dif DelMetric Tensor");
+        LogTensorArray(
+            matrix4X4ArraySub(
+                m1,
+                m2));
+        Debug.Log("Dif Mag DMetric Tensor");
+        float mm1 = TensorArrayMagnitude(m1);
+        float mm2 = TensorArrayMagnitude(m2);
+        Debug.Log(mm1 - mm2);
+    }
+
+    #endregion
+
+    #region structs
 
     public struct LightRay
     {
@@ -250,7 +349,7 @@ public class SimSingLight : MonoBehaviour
         }
         public Vector4 pos;
         public Vector4 k; // Richtung
-        
+
     }
 
     public struct Matrix3x3 //doch nicht...
@@ -265,15 +364,28 @@ public class SimSingLight : MonoBehaviour
         public Vector3 column1;
         public Vector3 column2;
     }
+
+    #endregion
+
+    #region RaySteppingCalculations
+
+    public float CalcR(Vector4 pos, float a)
+    {
+        float r = Mathf.Sqrt(CalcR2(pos, a));
+        return r;
+    }
+
     public LightRay StepLight (LightRay Y, float h)
     {
-        //Beschleunigung
-        //k_n wird als LightRay gespeichert, da es die selbe Form hat, ist aber anderer Natur (x->k,k->a)
+        //accleration
+        //k_n is stored as LightRay, because it has the same dimensions... But it is build different (x->k,k->a)
         LightRay k1 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
         LightRay k2 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
         LightRay k3 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
         LightRay k4 = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
         //k1
+        CalculateChristoffelsymbols(Y.pos, CalcR(Y.pos, a), a, M);
+        LogBiggestChristoffel(); //remove later
         k1 = CalculateA(Y);
         //k2
         LightRay k2TrialState = new LightRay(); //make new approximation
@@ -282,6 +394,8 @@ public class SimSingLight : MonoBehaviour
             k2TrialState.pos[mu] = Y.pos[mu] + (h / 2) * k1.pos[mu]; //k1.pos actually k
             k2TrialState.k[mu] = Y.k[mu] + (h/2) * k1.k[mu]; //k1.k actually a
         }
+        CalculateChristoffelsymbols(k2TrialState.pos, CalcR(k2TrialState.pos, a), a, M);
+        LogBiggestChristoffel(); //remove later
         k2 = CalculateA(k2TrialState);
         //k3
         LightRay k3TrialState = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
@@ -290,6 +404,8 @@ public class SimSingLight : MonoBehaviour
             k3TrialState.pos[mu] = Y.pos[mu] + (h / 2) * k2.pos[mu]; //k2.pos actually k
             k3TrialState.k[mu] = Y.k[mu] + (h / 2) * k2.k[mu]; //k2.k actually a
         }
+        CalculateChristoffelsymbols(k3TrialState.pos, CalcR(k3TrialState.pos, a), a, M);
+        LogBiggestChristoffel(); //remove later
         k3 = CalculateA(k3TrialState);
         //k4
         LightRay k4TrialState = new LightRay(new Vector4(0, 0, 0, 0), new Vector4(0, 0, 0, 0));
@@ -298,17 +414,19 @@ public class SimSingLight : MonoBehaviour
             k4TrialState.pos[mu] = Y.pos[mu] + h * k3.pos[mu]; //k2.pos actually k
             k4TrialState.k[mu] = Y.k[mu] + h * k3.k[mu]; //k2.k actually a
         }
+        CalculateChristoffelsymbols(k4TrialState.pos, CalcR(k4TrialState.pos, a), a, M);
+        LogBiggestChristoffel(); //remove later
         k4 = CalculateA(k4TrialState);
         float posX = Y.pos.x + (h / 6) * (k1.pos.x + 2 * k2.pos.x + 2 * k3.pos.x + k4.pos.x); //Ich bereue es leicht Copilot deaktiviert zu haben......
         float posY = Y.pos.y + (h / 6) * (k1.pos.y + 2 * k2.pos.y + 2 * k3.pos.y + k4.pos.y);
         float posZ = Y.pos.z + (h / 6) * (k1.pos.z + 2 * k2.pos.z + 2 * k3.pos.z + k4.pos.z);
         float posW = Y.pos.w + (h / 6) * (k1.pos.w + 2 * k2.pos.w + 2 * k3.pos.w + k4.pos.w);
-        float kX = Y.k.x + (h / 6) * (k1.k.x + 2 * k2.k.x + 2 * k3.k.x + k4.k.x);
+        float kX = Y.k.x + (h / 6) * (k1.k.x + 2 * k2.k.x + 2 * k3.k.x + k4.k.x); //maybe change naming if it makes it less confusing
         float kY = Y.k.y + (h / 6) * (k1.k.y + 2 * k2.k.y + 2 * k3.k.y + k4.k.y);
         float kZ = Y.k.z + (h / 6) * (k1.k.z + 2 * k2.k.z + 2 * k3.k.z + k4.k.z);
         float kW = Y.k.w + (h / 6) * (k1.k.w + 2 * k2.k.w + 2 * k3.k.w + k4.k.w);
         LightRay Y_new = new LightRay(new Vector4(posX, posY, posZ, posW), new Vector4(kX, kY, kZ, kW));
-        Y_new.k.x = AdjustForConstraints(Y_new);
+        //Y_new.k.x = AdjustForConstraints(Y_new);
         return Y_new;
     }
 
@@ -329,7 +447,73 @@ public class SimSingLight : MonoBehaviour
         return Output;
     }
 
-    public float AdjustForConstraints(LightRay Light) //warum bin ich so schrecklich im Namen geben???
+    public Vector4 HitObject(Vector4 newPos, Vector4 oldPos) //Vector3 for color + float for Metainformation
+    {
+        bool BlackHole = HitBlackHole(newPos);
+        Vector4 FlatAccretionDisk = HitFlatAccretionDisk(newPos, oldPos);
+        Vector4 SOI = HitSOI(newPos);
+        if (BlackHole) // return meta = 1
+        {
+            return new Vector4(0, 0, 0, 1);
+        }
+        else if (FlatAccretionDisk.w == 1) //return color + meta = 2
+        {
+           return FlatAccretionDisk;
+        }
+        else if (SOI.w == 1) //return 3
+        {
+            return SOI;
+        }
+        return new Vector4(0, 0, 0, 0);
+    }
+
+    public bool HitBlackHole(Vector4 newPos)
+    {
+        float EventHorizonRadius = 2 * M;
+        if (CalcR(newPos, a) <= EventHorizonRadius)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    Vector4 HitFlatAccretionDisk(Vector4 newPos, Vector4 oldPos)
+    {
+        if (newPos.w * oldPos.w > 0) //big brain moment
+        {
+            return new Vector4(0, 0, 0, 0);
+        }
+        Vector4 InterceptionPoint = newPos + oldPos; //apprx point where it crosses the rotation plain
+        InterceptionPoint /= 2;
+        InterceptionPoint.w = 0;
+        float Radius = CalcR(InterceptionPoint, a);
+        float Rin = 6 * M;
+        float Rout = 32 * M; //some random guess
+        if (Radius < Rin || Radius > Rout)
+        {
+            return new Vector4(0, 0, 0, 0);
+        }
+        return new Vector4(255 / Radius, 0, 0, 2);
+        //float Temp = TempNull * Mathf.Pow(Rin / Radius, -3 / 4);
+        //float Intensity = IntensityNull * Mathf.Pow(Rin / Radius, 3);
+
+    }
+
+    Vector4 HitSOI(Vector4 pos)
+    {
+        float Radius = CalcR(pos, a);
+        if (Radius < Rsoi)
+        {
+            return new Vector4(0, 0, 0, 0);
+        }
+        pos.Normalize();
+        float x = Mathf.Atan(pos.x / pos.y); //GPU for wont like this, maybe find suppliment when transferring, scusa mi per mio inglese scarso, mi esercito di piu italiano al momento
+        float y = Mathf.Atan(pos.x / pos.z);
+        float light = Mathf.PerlinNoise(x, y);
+        return new Vector4(light, light, light, 3);
+    }
+
+    public float AdjustForConstraints(LightRay Light) //macht alles schlechter fsr
     {
         CalcMetricTensor(Light.pos, Mathf.Sqrt(CalcR2(Light.pos, a)), a, M);
         float pd2 = 0; //p /2
@@ -391,7 +575,7 @@ public class SimSingLight : MonoBehaviour
         for (int mu = 0; mu < 4; mu++)
         {
             CalcMetricTensor(pos, r, a, M);
-            CalcDelMetricTensor(pos, r, M, a);
+            CalcDelMetricTensor(pos, r, a, M);
             for (int alpha = 0; alpha < 4; alpha++)
             {
                 for (int beta = 0; beta < 4; beta++)
@@ -519,7 +703,6 @@ public class SimSingLight : MonoBehaviour
 
     #endregion
 
-
     #region Helpers
     public Matrix4x4 MatrixAdd(Matrix4x4 m1, Matrix4x4 m2)
     {
@@ -532,6 +715,67 @@ public class SimSingLight : MonoBehaviour
             }
         }
         return result;
+    }
+
+    public Matrix4x4 MatrixSub(Matrix4x4 m1, Matrix4x4 m2)
+    {
+        Matrix4x4 result = new Matrix4x4();
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                result[i, j] = m1[i, j] - m2[i, j];
+            }
+        }
+        return result;
+    }
+
+    public Matrix4x4[] matrix4X4ArrayAdd(Matrix4x4[] m1, Matrix4x4[] m2)
+    {
+        Matrix4x4[] result = new Matrix4x4[4];
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    result[i][j, k] = m1[i][j, k] + m2[i][j, k];
+                }
+            }
+        }
+        return result;
+    }
+
+    public Matrix4x4[] matrix4X4ArraySub(Matrix4x4[] m1, Matrix4x4[] m2)
+    {
+        Matrix4x4[] result = new Matrix4x4[4];
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    result[i][j, k] = m1[i][j, k] - m2[i][j, k];
+                }
+            }
+        }
+        return result;
+    }
+
+    public float TensorArrayMagnitude(Matrix4x4[] m)
+    {
+        float sum = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    sum += m[i][j, k];
+                }
+            }
+        }
+        return sum;
     }
 
     public Matrix4x4 MatrixScalarMul(Matrix4x4 m, float s)
@@ -568,6 +812,16 @@ public class SimSingLight : MonoBehaviour
             Transform child = parent.transform.GetChild(i);
             Destroy(child.gameObject);
         }
+    }
+
+    public Vector4 txyz2xyzw(Vector4 v)
+    {
+        return new Vector4(v.y, v.z, v.w, v.x);
+    }
+
+    public Vector4 xyzw2txyz(Vector4 v)
+    {
+        return new Vector4(v.w, v.x, v.y, v.z);
     }
 
     #endregion
@@ -708,13 +962,14 @@ public class SimSingLight : MonoBehaviour
                 R[i, j] = Rtest[i - 1, j - 1];
             }
         }
+        R[0, 0] = 1; //do not disturb time
         Matrix4x4 e = new Matrix4x4();
         for (int mu = 0; mu < 4; mu++)
         {
             for (int a = 0; a < 4; a++)
             {
                 float sum = 0;
-                for (int b = 1; b < 4; b++)
+                for (int b = 0; b < 4; b++)
                 {
                     sum += Tetrad[mu, b] * R[b, a];
                 }
@@ -725,15 +980,62 @@ public class SimSingLight : MonoBehaviour
     }
 
     #endregion
+
+    #region Rendering
+
+    Color TraceRay(LightRay start)
+    {
+        LightRay nextPos = start;
+        for (int step = 0; step < maxSteps; step++)
+        {
+            nextPos = StepLight(nextPos, StepSize); //calculate nextPosition
+
+        }
+    }
+
+    Texture2D RenderTexture()
+    {
+        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
+        MetricTensorAtCam = MetricTensor;
+
+        localTetradAtCam = localTetrad(CameraPosition);
+        localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CamerRotation);
+        CamTexture = new Texture2D(MonitorSize.x, MonitorSize.y, TextureFormat.RGBA32, false);
+        for ( int x = 0; x < MonitorSize.x; x++)
+        {
+            for (int y = 0; y < MonitorSize.y; y++)
+            {
+                LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(x, y), localTetradAtCam); //put together later
+                CamTexture.SetPixel(x, y, TraceRay(Ray));
+            }
+        }
+        return CamTexture;
+    }
+
+    void OnRenderImage(RenderTexture src, RenderTexture dest)
+    {
+        if (CamMaterial != null)
+        {
+            Graphics.Blit(src, dest, CamMaterial);
+        }
+        else
+        {
+            Graphics.Blit(src, dest);
+        }
+    }
+
+    #endregion
+
     // Update is called once per frame
     void Update()
     {
         delT += 0.01f;
-        if (delT > refreshTime)
+        if (delT > refreshTime && simulate)
         {
             DeleteAllChildren(Parent);
             RunTests();
             delT = 0;
+            simulate = false;
         }
     }
 }
