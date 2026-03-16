@@ -26,6 +26,7 @@
 - 28.1.2026 Made function to construct Camera Tetrad and tested it... didn't work 😔 again
 - 29.1.2026 Made Heatmap Visualization of H field Strength. Inside the ring singularity r ≈ 0 -> circle singularity (Note 1)
 - 1.2 Started Camera Debugging (If you include "making it worse" in the definition of debugging)
+- 14-16.3 Worked on drawing picture to screen an simulate collisions with different obejcts like accretion disk, black hole or Sphere of "I don't care to simulate this any further"
 
 ## ToDo
 
