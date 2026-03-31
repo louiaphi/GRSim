@@ -54,12 +54,11 @@ public class MainRender : MonoBehaviour
         fieldCS.SetVector("CameraRotation", CameraRotation);
         fieldCS.SetFloat("FOV", FOV);
         fieldCS.SetInts("MonitorSize", MonitorSize.x, MonitorSize.y);
-        fieldCS.SetMatrix("MetricTensorAtCam", MetricTensorAtCam);
-        fieldCS.SetMatrix("localTetradAtCam", localTetradAtCam);
+        fieldCS.SetMatrix("MetricTensorAtCam", columnMajor2Row(MetricTensorAtCam));
+        fieldCS.SetMatrix("localTetradAtCam", columnMajor2Row(localTetradAtCam));
         fieldCS.SetFloat("M", M);
         fieldCS.SetFloat("a", a);
         fieldCS.SetFloat("StepSize", StepSize);
-        fieldCS.SetFloat("preciseSteps", preciseSteps);
         fieldCS.SetFloat("preciseSteps", preciseSteps);
         fieldCS.SetFloat("margin", margin);
         fieldCS.SetInt("maxSteps", maxSteps);
@@ -249,6 +248,18 @@ public class MainRender : MonoBehaviour
             }
         }
         return e;
+    }
+
+    public Matrix4x4 columnMajor2Row(Matrix4x4 matrix) 
+    {
+        Matrix4x4 m = Matrix4x4.identity;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++)
+            {
+                m[i, j] = matrix[j, i];
+            }
+        }
+        return m;
     }
 
 }

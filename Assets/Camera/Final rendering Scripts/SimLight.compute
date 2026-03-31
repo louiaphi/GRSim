@@ -111,16 +111,13 @@ float2 GetDirectionAngles(float3 v)
 
 RWTexture2D<float4> Result;
 
-float4x4 MetricTensor; //Propertys of spacetime at certain point
-float4x4 InvMetricTensor;
-float4x4 dMetricTensor[4];
-float4x4 Christoffelsymbols[4];
+
 static const float4x4 diag = float4x4(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
 float4 CameraPosition = float4(0, 100, 0, 0); //Camera and Monitor specs
 float3 CameraRotation; 
 float FOV;
-int2 MonitorSize = int2(1080, 1920);
+int2 MonitorSize;
 
 float4x4 MetricTensorAtCam; //constant data about space time at camera position
 float4x4 localTetradAtCam;
@@ -157,6 +154,10 @@ struct MetricData
 {
     float4x4 g; // covariant metric
     float4x4 ginv; // inverse metric
+};
+struct DelMetric
+{
+    float4x4 delG[4]; // covariant metric
 };
 
 struct ChristoffelData
@@ -293,7 +294,7 @@ MetricData CalcMetric(float4 position, float r, float a, float M)
     md.ginv = CalcInverseMetric(H, l);
     return md;
 }
-float4x4 CalcDelMetricTensor_lambda(float4 position, float r, float a, float M, int lambda)
+DelMetric CalcDelMetricTensor(float4 position, float r, float a, float M)
 {
     float4 L = CalcL(position, r, a);
     float4 delR = CalcDelR(position, a);
@@ -301,14 +302,19 @@ float4x4 CalcDelMetricTensor_lambda(float4 position, float r, float a, float M, 
     float4 delH = CalcDelH(position, r, M, a);
     float H = CalcH(r, position.w, M, a); //actually z, but (t, x, y, z) -> (x, y, z, w)
     float4x4 dg;
-    for (int mu = 0; mu < 4; mu++)
+    DelMetric dM;
+    for (int lambda = 0; lambda < 4; lambda++)
     {
-        for (int nu = 0; nu < 4; nu++)
+        for (int mu = 0; mu < 4; mu++)
         {
-            dg[mu, nu] = 2 * (delH[lambda] * L[mu] * L[nu] + H * delL[lambda][mu] * L[nu] + H * delL[lambda][nu] * L[mu]);
+            for (int nu = 0; nu < 4; nu++)
+            {
+                dg[mu, nu] = 2 * (delH[lambda] * L[mu] * L[nu] + H * delL[lambda][mu] * L[nu] + H * delL[lambda][nu] * L[mu]);
+            }
         }
+        dM.delG[lambda] = dg;
     }
-    return dg;
+    return dM;
 }
 
 //calculate christoffelsymbols (these are most important for tracing geodesics)
@@ -316,6 +322,7 @@ ChristoffelData CalculateChristoffelsymbols(float4 pos, float r, float a, float 
 {
     MetricData md = CalcMetric(pos, r, a, M);
     ChristoffelData cd;
+    DelMetric dM = CalcDelMetricTensor(pos, r, a, M);
     for (int mu = 0; mu < 4; mu++)
     {
         for (int alpha = 0; alpha < 4; alpha++)
@@ -325,7 +332,7 @@ ChristoffelData CalculateChristoffelsymbols(float4 pos, float r, float a, float 
                 cd.G[mu][alpha, beta] = 0;
                 for (int nu = 0; nu < 4; nu++)
                 {
-                    cd.G[mu][alpha, beta] += InvMetricTensor[mu, nu] * (dMetricTensor[alpha][nu, beta] + dMetricTensor[beta][nu, alpha] - dMetricTensor[nu][alpha, beta]);
+                    cd.G[mu][alpha, beta] += md.ginv[mu, nu] * (dM.delG[alpha][nu, beta] + dM.delG[beta][nu, alpha] - dM.delG[nu][alpha, beta]);
                 }
                 cd.G[mu][alpha, beta] = 0.5 * cd.G[mu][alpha, beta];
             }
@@ -501,26 +508,26 @@ float4 HitObject(float4 newPos, float4 oldPos) //Vector3 for color + float for M
     return float4(0, 0, 0, 0);
 }
 
-float AdjustForConstraints(LightRay Light) //destroys stuff fsr
-{
-    CalcMetric(Light.pos, sqrt(CalcR2(Light.pos, a)), a, M);
-    float pd2 = 0; //p /2
-    for (int i = 0; i < 4; i++)
-    {
-        pd2 += MetricTensor[0, i] * Light.k[i];
-    }
-    float Q = 0;
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            Q += MetricTensor[i, j] * Light.k[i] * Light.k[j];
-        }
-    }
-    Q *= MetricTensor[0, 0];
-    float k0 = (pd2 + sqrt(pd2 * pd2 - Q)) / (MetricTensor[0, 0]);
-    return k0;
-}
+//float AdjustForConstraints(LightRay Light) //destroys stuff fsr
+//{
+//    CalcMetric(Light.pos, sqrt(CalcR2(Light.pos, a)), a, M);
+//    float pd2 = 0; //p /2
+//    for (int i = 0; i < 4; i++)
+//    {
+//        pd2 += MetricTensor[0, i] * Light.k[i];
+//    }
+//    float Q = 0;
+//    for (int i = 0; i < 4; i++)
+//    {
+//        for (int j = 0; j < 4; j++)
+//        {
+//            Q += MetricTensor[i, j] * Light.k[i] * Light.k[j];
+//        }
+//    }
+//    Q *= MetricTensor[0, 0];
+//    float k0 = (pd2 + sqrt(pd2 * pd2 - Q)) / (MetricTensor[0, 0]);
+//    return k0;
+//}
 
 float4 TraceRay(LightRay start)
 {
