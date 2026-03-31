@@ -26,16 +26,20 @@
 - 28.1.2026 Made function to construct Camera Tetrad and tested it... didn't work 😔 again
 - 29.1.2026 Made Heatmap Visualization of H field Strength. Inside the ring singularity r ≈ 0 -> circle singularity (Note 1)
 - 1.2 Started Camera Debugging (If you include "making it worse" in the definition of debugging)
+- 14-16.3 Worked on drawing picture to screen an simulate collisions with different obejcts like accretion disk, black hole or Sphere of "I don't care to simulate this any further"
+- 18.3 Fixed Bug with Camera when Aspectration != 1 and fixed holes in Black hole (took 3 days to fix this bug)
 
 ## ToDo
 
 - check for constraints in geodesic integration [x]
-- chech for constraints in all dimensions [ ]
+- check for constraints in all dimensions [ ]
 - create local tedrad [x]
-- account for colissions [ ]
-- render image [ ]
+- account for colissions [x]
+- render image [x]
 - account for redshift [ ]
-- make steps inverse proportional to H so that stronger gravity = smaller step size
+- make steps inverse proportional to H so that stronger gravity = smaller step size[ ]
+- fix asymetries [ ]
+- fix escaping [x]
 
 ## Debugg Steps:
 
