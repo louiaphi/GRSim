@@ -7,25 +7,25 @@ public class MainRender : MonoBehaviour
     Matrix4x4 MetricTensor;
     Matrix4x4 diag;
 
-    public Vector4 CameraPosition = new Vector4(0, 100, 0, 0);
-    public Vector3 CameraRotation;
-    public float FOV;
-    public Vector2Int MonitorSize = new Vector2Int(1080, 1920);
+    public Vector4 CameraPosition = new Vector4(0, 10, 0, 10);
+    public Vector3 CameraRotation = new Vector3(0, 255, 90);
+    public float FOV = 1.5f;
+    public Vector2Int MonitorSize = new Vector2Int(192, 108);
 
     Matrix4x4 MetricTensorAtCam;
     Matrix4x4 localTetradAtCam;
 
-    public float M = 1;
-    public float a = 0.1f;
+    public float M = 2;
+    public float a = 0;
 
     public float StepSize = 0.2f;
-    public float preciseSteps = 0.1f;
+    public float preciseSteps = 0.01f;
 
-    public float Rsoi;
+    public float Rsoi = 30;
 
-    public int maxSteps;
+    public int maxSteps = 400;
     public float margin = 1;
-    public float SuckInMargin;
+    public float SuckInMargin = 1.05f;
 
     public ComputeShader fieldCS;
     RenderTexture target;

@@ -997,7 +997,7 @@ MonoBehaviour:
   IntensityNull: 100
   Rsoi: 25
   CamMaterial: {fileID: 2100000, guid: 73cf76c4f5d8abd439fead8cc82fbd1f, type: 2}
-  maxSteps: 400
+  maxSteps: 1000
   Render: 1
   margin: 1
   SuckInMargin: 1.01
@@ -1183,8 +1183,8 @@ MonoBehaviour:
   MonitorSize: {x: 108, y: 192}
   M: 2
   a: 0
-  StepSize: 0.2
-  preciseSteps: 0.01
+  StepSize: 1
+  preciseSteps: 1
   Rsoi: 30
   maxSteps: 400
   margin: 1
