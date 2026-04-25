@@ -351,18 +351,15 @@ public class SimSingLight : MonoBehaviour
         {
             if (float.IsNaN(newPos[mu]))
             {
-                //Debug.Log("gone but not forgotten");
-                return new Vector4(0, 0, 0, -1); //some jokes must be allowed
+                return new Vector4(0, 0, 0, -1);
             }
         }
         if (BlackHole) // return meta = 1
         {
-            //Debug.Log("Nomm Nomm");
             return new Vector4(0, 0, 0, 1);
         }
         else if (FlatAccretionDisk.w == 1) //return color + meta = 1 for hit
         {
-            //Debug.Log("Is it a burd?");
             return FlatAccretionDisk;
         }
         else if (SOI.w == 1)
@@ -385,30 +382,22 @@ public class SimSingLight : MonoBehaviour
 
     Vector4 HitFlatAccretionDisk(Vector4 newPos, Vector4 oldPos)
     {
-        //Debug.Log("newPos" + newPos);
-        //Debug.Log("oldPos + " + oldPos);
-        //Debug.Log(newPos.w * oldPos.w);
         if (newPos.w * oldPos.w >= 0)
         {
-            //Debug.Log("nu ugh");
             return new Vector4(0, 0, 0, 0);
         }
-        //Debug.Log("first test passed");
         Vector4 InterceptionPoint = newPos + oldPos; //apprx point where it crosses the rotation plain
         InterceptionPoint /= 2; //bessere Schnittpubkt methode
         InterceptionPoint.w = 0;
         float Radius = CalcR(InterceptionPoint, a);
-        float Rin = 6 * M;
-        float Rout = 9 * M; //some random guess
+        float Rin = CalcRisco();
+        float Rout = 12 * M; //some random guess
+        Debug.Log("Rin: " + Rin + ", Rout: " + Rout + ", Radius: " + Radius);
         if (Radius < Rin || Radius > Rout)
         {
-            //Debug.Log("to far out");
             return new Vector4(0, 0, 0, 0);
         }
-        //Debug.Log("yay");
-        return new Vector4(255 / (Radius - 6 * M), 0, 0, 1);
-        //float Temp = TempNull * Mathf.Pow(Rin / Radius, -3 / 4);
-        //float Intensity = IntensityNull * Mathf.Pow(Rin / Radius, 3);
+        return new Vector4(255, 0, 0, 1);
 
     }
 
@@ -420,16 +409,8 @@ public class SimSingLight : MonoBehaviour
             return new Vector4(0, 0, 0, 0);
         }
         pos.Normalize();
-        //float x = Mathf.Atan(pos.x / pos.y); //GPU for wont like this, maybe find suppliment when transferring, scusa mi per mio inglese scarso, mi esercito di piu italiano al momento
-        //float y = Mathf.Atan(pos.x / pos.z);
-        //float light = Random.Range(0, 255);
-        //light = Mathf.Sqrt(light);
-        pos.Normalize();
-        Vector2 point = GetDirectionAngles(new Vector3(pos.y, pos.z, pos.w));
-        //Debug.Log("point: " + point);
-        return new Vector4((Mathf.Abs(point.x)) * 1.4f, (point.y + 70) * 1.8f, 0, 1);
-        float light = Mathf.PerlinNoise(point.x / div, point.y / div) * 100;
-        return new Vector4(light, light, light, 1);
+
+        return new Vector4(50, 50, 50, 1);
     }
 
     Vector2 GetDirectionAngles(Vector3 v)
@@ -653,6 +634,15 @@ public class SimSingLight : MonoBehaviour
     #endregion
 
     #region Helpers
+
+    float CalcRisco() //inner most stable orbit https://en.wikipedia.org/wiki/Innermost_stable_circular_orbit#Rotating_black_holes
+    {
+        float chi = a / M;
+        float Z1 = 1 + Mathf.Pow(1 - chi * chi, 1 / 3f) * (Mathf.Pow(1 + chi, 1 / 3f) + Mathf.Pow(1 - chi, 1 / 3f));
+        float Z2 = Mathf.Sqrt(3 * chi * chi + Z1 * Z1);
+        float Risco = M * (3 + Z2 - Mathf.Sqrt((3 - Z1) * (3 + Z1 + 2 * Z2)));
+        return Risco;
+    }
     public Matrix4x4 MatrixAdd(Matrix4x4 m1, Matrix4x4 m2)
     {
         Matrix4x4 result = new Matrix4x4();
@@ -977,37 +967,6 @@ public class SimSingLight : MonoBehaviour
             }
         }
         return new Color(0, 1, 0);
-    }
-
-    Texture2D RenderTexture()
-    {
-        CalcMetricTensor(CameraPosition, CalcR(CameraPosition, a), a, M); //Calculate Metric Tensor at Camera Position
-        MetricTensorAtCam = MetricTensor;
-
-        localTetradAtCam = localTetrad(CameraPosition);
-        localTetradAtCam = rotateLocalTetrad(localTetradAtCam, CameraRotation);
-        CamTexture = new Texture2D(MonitorSize.x, MonitorSize.y, TextureFormat.RGBA32, false);
-        CamTexture.filterMode = FilterMode.Point;   // crisp pixels
-        CamTexture.wrapMode = TextureWrapMode.Clamp;
-        for (int x = 0; x < MonitorSize.x; x++)
-        {
-            for (int y = 0; y < MonitorSize.y; y++)
-            {
-                LightRay Ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y, new Vector2(x, y), localTetradAtCam);
-                Color color = TraceRay(Ray);
-                if (color == new Color(0, 1, 0))
-                    Debug.Log("error at: x: " + x + "y: " + y);
-                CamTexture.SetPixel(x, y, color);
-            }
-        }
-        Debug.Log("finished Rendering");
-        return CamTexture;
-    }
-
-    public void DrawTexture(Texture2D tex, Material targetMaterial, int width, int height) //couldn't get working so I ask ChatGPT for minimal working example and made it fit
-    {
-        tex.Apply();
-        targetMaterial.mainTexture = tex;
     }
 
     #endregion

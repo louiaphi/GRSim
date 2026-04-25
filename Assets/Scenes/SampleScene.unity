@@ -561,7 +561,6 @@ GameObject:
   - component: {fileID: 898342073}
   - component: {fileID: 898342072}
   - component: {fileID: 898342071}
-  - component: {fileID: 898342075}
   m_Layer: 0
   m_Name: Quad
   m_TagString: Untagged
@@ -662,31 +661,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &898342075
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 898342070}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db7fa00da5f86e74ba82e0196aabc7c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MainRender
-  CameraPosition: {x: 0, y: 10, z: 0, w: 10}
-  CameraRotation: {x: 0, y: 225, z: 90}
-  FOV: 1.5
-  MonitorSize: {x: 1920, y: 1080}
-  M: 2
-  a: 0
-  StepSize: 0.2
-  preciseSteps: 0.01
-  Rsoi: 30
-  maxSteps: 400
-  margin: 1
-  SuckInMargin: 1.05
-  fieldCS: {fileID: 7200000, guid: 956ea643da1253440ac08263a408678a, type: 3}
 --- !u!1 &910757127
 GameObject:
   m_ObjectHideFlags: 0
@@ -985,19 +959,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0567163d239a48c44a3781e0c942b387, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimSingLight
-  CameraPosition: {x: 0, y: 15, z: 3, w: 5}
-  CameraRotation: {x: 0, y: 225, z: 90}
+  CameraPosition: {x: 0, y: 0, z: 0, w: 20}
+  CameraRotation: {x: 0, y: 180, z: 0}
   FOV: 1.5
-  MonitorSize: {x: 192, y: 108}
+  MonitorSize: {x: 19, y: 11}
   M: 2
   a: 0
   StepSize: 0.2
   preciseSteps: 0.01
   TempNull: 100
   IntensityNull: 100
-  Rsoi: 25
+  Rsoi: 80
   CamMaterial: {fileID: 2100000, guid: 73cf76c4f5d8abd439fead8cc82fbd1f, type: 2}
-  maxSteps: 1000
+  maxSteps: 10000
   Render: 1
   margin: 1
   SuckInMargin: 1.01
@@ -1174,22 +1148,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 2119046722}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db7fa00da5f86e74ba82e0196aabc7c8, type: 3}
+  m_Script: {fileID: 11500000, guid: 049e44d17bb112249ac28036f60123e2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MainRender
-  CameraPosition: {x: 0, y: 15, z: 0, w: 15}
-  CameraRotation: {x: 0, y: 225, z: 90}
+  m_EditorClassIdentifier: Assembly-CSharp::MainRender2
+  CameraPosition: {x: 0, y: 10, z: 0, w: 10}
+  CameraRotation: {x: 0, y: 255, z: 90}
   FOV: 1.5
-  MonitorSize: {x: 108, y: 192}
+  MonitorSize: {x: 192, y: 108}
   M: 2
   a: 0
-  StepSize: 1
-  preciseSteps: 1
+  StepSize: 0.2
+  preciseSteps: 0.01
   Rsoi: 30
   maxSteps: 400
   margin: 1
   SuckInMargin: 1.05
-  fieldCS: {fileID: 7200000, guid: 956ea643da1253440ac08263a408678a, type: 3}
+  fieldCS: {fileID: 7200000, guid: 31d9b10ae97fae44b96fc9af41ee05c7, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

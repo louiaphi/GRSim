@@ -1,0 +1,465 @@
+#pragma kernel CSMain
+
+//Helpers
+
+//Matrix helpers
+float4x4 MatrixAdd(float4x4 m1, float4x4 m2)
+{
+    float4x4 result = (float4x4)0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            result[i][j] = m1[i][j] + m2[i][j];
+        }
+    }
+    return result;
+}
+float4x4 MatrixSub(float4x4 m1, float4x4 m2)
+{
+    float4x4 result = (float4x4)0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            result[i][j] = m1[i][j] - m2[i][j];
+        }
+    }
+    return result;
+}
+float4x4 MatrixScalarMul(float4x4 m, float s)
+{
+    float4x4 result = (float4x4)0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            result[i][j] = m[i][j] * s;
+        }
+    }
+    return result;
+}
+//convert coordinate convensions
+float4 txyz2xyzw(float4 v)
+{
+    return float4(v.y, v.z, v.w, v.x);
+}
+float4 xyzw2txyz(float4 v)
+{
+    return float4(v.w, v.x, v.y, v.z);
+}
+//check if float is NaN
+bool isNaN(float x)
+{
+    return !(x < 0 || x == 0 || x > 0);
+}
+//gets polar angles from vector
+float2 GetDirectionAngles(float3 v)
+{
+    float yaw = atan2(v.z, v.x);
+    float horizontalLength = sqrt(v.x * v.x + v.z * v.z);
+    float pitch = atan2(v.y, horizontalLength);
+    yaw   *= 57.29578f;
+    pitch *= 57.29578f;
+    return float2(yaw, pitch);
+}
+
+
+RWTexture2D<float4> Result;
+
+
+static const float4x4 diag = float4x4(-1, 0, 0, 0,
+                                       0, 1, 0, 0,
+                                       0, 0, 1, 0,
+                                       0, 0, 0, 1);
+
+float4 CameraPosition;
+float3 CameraRotation;
+float  FOV;
+int2   MonitorSize;
+
+float4x4 MetricTensorAtCam;
+float4x4 localTetradAtCam;
+
+float M;
+float a;
+
+float StepSize;
+float preciseSteps;
+float margin;
+int   maxSteps;
+
+float Rsoi;
+float SuckInMargin;
+
+//struct to represent Light rays
+struct LightRay
+{
+    float4 pos;
+    float4 k;
+};
+
+LightRay newLightRay(float4 pos, float4 k)
+{
+    LightRay ray;
+    ray.pos = pos;
+    ray.k   = k;
+    return ray;
+}
+
+struct MetricData
+{
+    float4x4 g;
+    float4x4 ginv;
+};
+struct DelMetric
+{
+    float4x4 delG[4];
+};
+
+struct ChristoffelData
+{
+    float4x4 G[4];
+};
+
+//Calculate Radius and properties of spacetime at one point
+float CalcR2(float4 pos, float a)
+{
+    float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
+    return 0.5 * (rho2 - a * a + sqrt(pow(rho2 - a * a, 2) + 4 * a * a * pos.w * pos.w));
+}
+float CalcR(float4 pos, float a)
+{
+    return sqrt(CalcR2(pos, a));
+}
+float4 CalcL(float4 pos, float r, float a)
+{
+    return float4(-1,
+                  (r * pos.y + a * pos.z) / (r * r + a * a),
+                  (r * pos.z - a * pos.y) / (r * r + a * a),
+                  pos.w / r);
+}
+float CalcH(float r, float z, float M, float a)
+{
+    return (M * r * r * r) / (r * r * r * r + a * a * z * z);
+}
+
+//Calculate derivatives of spacetime at one point
+float CalcDelH_R(float r, float z, float M, float a)
+{
+    float r2 = r * r;
+    float r3 = r2 * r;
+    float r4 = r2 * r2;
+    float numerator   = M * (3 * r2 * (r4 + a * a * z * z) - r3 * (4 * r3));
+    float denominator = pow(r4 + a * a * z * z, 2);
+    return numerator / denominator;
+}
+float CalcDelH_Z(float r, float z, float M, float a)
+{
+    float r4 = r * r * r * r;
+    float numerator   = -2 * M * r * r * r * a * a * z;
+    float denominator = pow(r4 + a * a * z * z, 2);
+    return numerator / denominator;
+}
+float4 CalcDelR2(float4 pos, float a)
+{
+    float x = pos.y;
+    float y = pos.z;
+    float z = pos.w;
+    float a2 = a * a;
+    float rho2 = x * x + y * y + z * z;
+    float delta = pow(rho2 - a2, 2) + 4 * a2 * z * z;
+    float sqrtDelta = sqrt(delta);
+
+    float delR2X = 0.5 * (2 * x + (2 * (rho2 - a2) * x) / sqrtDelta);
+    float delR2Y = 0.5 * (2 * y + (2 * (rho2 - a2) * y) / sqrtDelta);
+    float delR2Z = 0.5 * (2 * z + (2 * (rho2 - a2) * z + 4 * a2 * z) / sqrtDelta);
+
+    return float4(0, delR2X, delR2Y, delR2Z);
+}
+float4 CalcDelR(float4 pos, float a)
+{
+    float4 delR2 = CalcDelR2(pos, a);
+    float r = sqrt(CalcR2(pos, a));
+    return float4(0, delR2.y / (2 * r), delR2.z / (2 * r), delR2.w / (2 * r));
+}
+float4x4 CalcDelL(float4 pos, float r, float4 delR, float a)
+{
+    int KroX[4] = { 0, 1, 0, 0 };
+    int KroY[4] = { 0, 0, 1, 0 };
+    int KroZ[4] = { 0, 0, 0, 1 };
+    float4 delLT = float4(0, 0, 0, 0);
+    float4 delLX = float4(0, 0, 0, 0);
+    float4 delLY = float4(0, 0, 0, 0);
+    float4 delLZ = float4(0, 0, 0, 0);
+
+    float r2a2 = r * r + a * a;
+    float FactorX = (pos.y * r2a2 - 2 * r * (r * pos.y + a * pos.z)) / (r2a2 * r2a2);
+    for (int dim = 1; dim < 4; dim++)
+    {
+        delLX[dim] = (r * KroX[dim] + a * KroY[dim]) / r2a2 + FactorX * delR[dim];
+    }
+    float FactorY = (pos.z * r2a2 - 2 * r * (r * pos.z - a * pos.y)) / (r2a2 * r2a2);
+    for (int dim = 1; dim < 4; dim++)
+    {
+        delLY[dim] = (r * KroY[dim] - a * KroX[dim]) / r2a2 + FactorY * delR[dim];
+    }
+    for (int dim = 1; dim < 4; dim++)
+    {
+        delLZ[dim] = KroZ[dim] / r - pos.w / (r * r) * delR[dim];
+    }
+    return float4x4(delLT, delLX, delLY, delLZ);
+}
+float4 CalcDelH(float4 pos, float r, float M, float a)
+{
+    float delH_R = CalcDelH_R(r, pos.w, M, a);
+    float delH_Z = CalcDelH_Z(r, pos.w, M, a);
+    float4 dr = CalcDelR(pos, a);
+    float delH_X       = delH_R * dr.y;
+    float delH_Y       = delH_R * dr.z;
+    float delH_Z_final = delH_R * dr.w + delH_Z;
+    return float4(0, delH_X, delH_Y, delH_Z_final);
+}
+
+//Properties of the metric
+float4x4 CalcInverseMetric(float H, float4 L)
+{
+    float4 Lup = float4(-L[0], L[1], L[2], L[3]);
+    float4x4 inv = diag;
+    for (int mu = 0; mu < 4; mu++)
+    {
+        for (int nu = 0; nu < 4; nu++)
+        {
+            inv[mu][nu] -= 2 * H * Lup[mu] * Lup[nu];
+        }
+    }
+    return inv;
+}
+MetricData CalcMetric(float4 position, float r, float a, float M)
+{
+    float z = position.w;
+    float H = CalcH(r, z, M, a);
+    float4 l = CalcL(position, r, a);
+    MetricData md;
+    md.g = (float4x4)0;
+    for (int mu = 0; mu < 4; mu++)
+    {
+        for (int nu = 0; nu < 4; nu++)
+        {
+            md.g[mu][nu] = diag[mu][nu] + 2 * H * l[mu] * l[nu];
+        }
+    }
+    md.ginv = CalcInverseMetric(H, l);
+    return md;
+}
+DelMetric CalcDelMetricTensor(float4 position, float r, float a, float M)
+{
+    float4   L    = CalcL(position, r, a);
+    float4   delR = CalcDelR(position, a);
+    float4x4 delL = CalcDelL(position, r, delR, a);
+    float4   delH = CalcDelH(position, r, M, a);
+    float    H    = CalcH(r, position.w, M, a);
+
+    DelMetric dM;
+    for (int lambda = 0; lambda < 4; lambda++)
+    {
+        float4x4 dg = (float4x4)0;
+        for (int mu = 0; mu < 4; mu++)
+        {
+            for (int nu = 0; nu < 4; nu++)
+            {
+                dg[mu][nu] = 2 * (delH[lambda] * L[mu] * L[nu]
+                                + H * delL[lambda][mu] * L[nu]
+                                + H * delL[lambda][nu] * L[mu]);
+            }
+        }
+        dM.delG[lambda] = dg;
+    }
+    return dM;
+}
+
+//calculate Christoffel symbols
+ChristoffelData CalculateChristoffelsymbols(float4 pos, float r, float a, float M)
+{
+    MetricData md = CalcMetric(pos, r, a, M);
+    DelMetric  dM = CalcDelMetricTensor(pos, r, a, M);
+    ChristoffelData cd;
+    for (int mu = 0; mu < 4; mu++)
+    {
+        cd.G[mu] = (float4x4)0;
+        for (int alpha = 0; alpha < 4; alpha++)
+        {
+            for (int beta = 0; beta < 4; beta++)
+            {
+                float s = 0;
+                for (int nu = 0; nu < 4; nu++)
+                {
+                    s += md.ginv[mu][nu] * (dM.delG[alpha][nu][beta]
+                                           + dM.delG[beta][nu][alpha]
+                                           - dM.delG[nu][alpha][beta]);
+                }
+                cd.G[mu][alpha][beta] = 0.5 * s;
+            }
+        }
+    }
+    return cd;
+}
+
+//camera ray setup
+LightRay instantiateRay(float4 CamPos, float FOV, float Width, float Height,
+                        float2 pos, float4x4 rotatedlocalTetrad)
+{
+    float aspectRatio = Width / Height;
+    float u = ((pos.x + 0.5) / Width  - 0.5) * 2;
+    float v = ((pos.y + 0.5) / Height - 0.5) * 2;
+    float alpha = tan(FOV / 2) * u * aspectRatio;
+    float beta  = tan(FOV / 2) * v;
+    float A = sqrt(alpha * alpha + beta * beta + 1);
+    float4 aRay = float4(A, alpha, beta, 1);
+    float4 k = float4(0, 0, 0, 0);
+    for (int i = 0; i < 4; i++)
+    {
+        float sum = 0;
+        for (int j = 0; j < 4; j++)
+        {
+            sum += rotatedlocalTetrad[i][j] * aRay[j];
+        }
+        k[i] = sum;
+    }
+    return newLightRay(CamPos, k);
+}
+
+//geodesic
+LightRay CalculateA(LightRay aprxLight, ChristoffelData cd)
+{
+    LightRay Output = newLightRay(float4(0, 0, 0, 0), float4(0, 0, 0, 0));
+    for (int mu = 0; mu < 4; mu++)
+    {
+        float acc = 0;
+        for (int alpha = 0; alpha < 4; alpha++)
+        {
+            for (int beta = 0; beta < 4; beta++)
+            {
+                acc += -1 * cd.G[mu][alpha][beta] * aprxLight.k[alpha] * aprxLight.k[beta];
+            }
+        }
+        Output.k[mu] = acc;
+    }
+    Output.pos = aprxLight.k;
+    return Output;
+}
+
+LightRay StepLight(LightRay Y, float h)
+{
+    ChristoffelData cd;
+
+    cd = CalculateChristoffelsymbols(Y.pos, CalcR(Y.pos, a), a, M);
+    LightRay k1 = CalculateA(Y, cd);
+
+    LightRay k2TrialState = newLightRay(float4(0, 0, 0, 0), float4(0, 0, 0, 0));
+    for (int mu1 = 0; mu1 < 4; mu1++)
+    {
+        k2TrialState.pos[mu1] = Y.pos[mu1] + (h / 2) * k1.pos[mu1];
+        k2TrialState.k[mu1]   = Y.k[mu1]   + (h / 2) * k1.k[mu1];
+    }
+    cd = CalculateChristoffelsymbols(k2TrialState.pos, CalcR(k2TrialState.pos, a), a, M);
+    LightRay k2 = CalculateA(k2TrialState, cd);
+
+    LightRay k3TrialState = newLightRay(float4(0, 0, 0, 0), float4(0, 0, 0, 0));
+    for (int mu2 = 0; mu2 < 4; mu2++)
+    {
+        k3TrialState.pos[mu2] = Y.pos[mu2] + (h / 2) * k2.pos[mu2];
+        k3TrialState.k[mu2]   = Y.k[mu2]   + (h / 2) * k2.k[mu2];
+    }
+    cd = CalculateChristoffelsymbols(k3TrialState.pos, CalcR(k3TrialState.pos, a), a, M);
+    LightRay k3 = CalculateA(k3TrialState, cd);
+
+    LightRay k4TrialState = newLightRay(float4(0, 0, 0, 0), float4(0, 0, 0, 0));
+    for (int mu3 = 0; mu3 < 4; mu3++)
+    {
+        k4TrialState.pos[mu3] = Y.pos[mu3] + h * k3.pos[mu3];
+        k4TrialState.k[mu3]   = Y.k[mu3]   + h * k3.k[mu3];
+    }
+    cd = CalculateChristoffelsymbols(k4TrialState.pos, CalcR(k4TrialState.pos, a), a, M);
+    LightRay k4 = CalculateA(k4TrialState, cd);
+
+    float4 newPos = Y.pos + (h / 6.0) * (k1.pos + 2 * k2.pos + 2 * k3.pos + k4.pos);
+    float4 newK   = Y.k   + (h / 6.0) * (k1.k   + 2 * k2.k   + 2 * k3.k   + k4.k);
+    return newLightRay(newPos, newK);
+}
+
+//collisions
+bool HitBlackHole(float4 newPos)
+{
+    float EventHorizonRadius = 2 * M;
+    return CalcR(newPos, a) <= EventHorizonRadius * SuckInMargin;
+}
+float4 HitFlatAccretionDisk(float4 newPos, float4 oldPos)
+{
+    if (newPos.w * oldPos.w >= 0) return float4(0, 0, 0, 0);
+
+    float4 InterceptionPoint = (newPos + oldPos) * 0.5;
+    InterceptionPoint.w = 0;
+    float Radius = CalcR(InterceptionPoint, a);
+    float Rin  = 6 * M;
+    float Rout = 9 * M;
+    if (Radius < Rin || Radius > Rout) return float4(0, 0, 0, 0);
+    // guarded inner-edge brightness so the divide by zero at Radius==Rin doesn't NaN
+    float t = saturate((Radius - Rin) / (Rout - Rin)); // 0 at inner edge, 1 at outer
+    return float4(1.0 - t, 0, 0, 1);
+}
+float4 HitSOI(float4 pos)
+{
+    float Radius = CalcR(pos, a);
+    if (Radius < Rsoi) return float4(0, 0, 0, 0);
+    return float4(0, 1, 0, 1);
+}
+float4 HitObject(float4 newPos, float4 oldPos)
+{
+    bool   BlackHole         = HitBlackHole(newPos);
+    float4 FlatAccretionDisk = HitFlatAccretionDisk(newPos, oldPos);
+    float4 SOI               = HitSOI(newPos);
+    for (int mu = 0; mu < 4; mu++)
+    {
+        if (isNaN(newPos[mu]))
+        {
+            return float4(1, 0, 1, 1); // magenta = NaN, easy to spot while debugging
+        }
+    }
+    if (BlackHole)               return float4(0, 0, 0, 1);
+    if (FlatAccretionDisk.w == 1) return FlatAccretionDisk;
+    if (SOI.w == 1)               return SOI;
+    return float4(0, 0, 0, 0);
+}
+
+float4 TraceRay(LightRay start)
+{
+    LightRay nextPos = start;
+    LightRay prevPos = start;
+    for (int step = 0; step < maxSteps; step++)
+    {
+        prevPos = nextPos;
+        float r = CalcR(nextPos.pos, a);
+        float precision = StepSize;
+        if (r - 2 * M < margin) precision = preciseSteps;
+
+        nextPos = StepLight(nextPos, precision);
+        float4 Hit = HitObject(nextPos.pos, prevPos.pos);
+        if (Hit.w != 0)
+        {
+            // Hit already carries a 0..1 color from the hit functions
+            return float4(Hit.rgb, 1);
+        }
+    }
+    return float4(0, 0, 1, 1); // ran out of steps -> blue
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if ((int)id.x >= MonitorSize.x || (int)id.y >= MonitorSize.y) return;
+    LightRay ray = instantiateRay(CameraPosition, FOV, MonitorSize.x, MonitorSize.y,
+                                  float2(id.x, id.y), localTetradAtCam);
+    float4 color = TraceRay(ray);
+    Result[int2(id.x, id.y)] = color;
+}
