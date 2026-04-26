@@ -1006,7 +1006,6 @@ GameObject:
   - component: {fileID: 2119046724}
   - component: {fileID: 2119046723}
   - component: {fileID: 2119046728}
-  - component: {fileID: 2119046729}
   m_Layer: 0
   m_Name: Plane (1)
   m_TagString: Untagged
@@ -1155,7 +1154,7 @@ MonoBehaviour:
   CameraPosition: {x: 0, y: 0, z: 20, w: 0}
   CameraRotation: {x: 90, y: 0, z: 0}
   FOV: 1.5
-  MonitorSize: {x: 1920, y: 1080}
+  MonitorSize: {x: 192, y: 108}
   M: 2
   a: 0
   StepSize: 0.2
@@ -1164,21 +1163,8 @@ MonoBehaviour:
   maxSteps: 10000
   margin: 1
   SuckInMargin: 1.01
-  TargetPlane: {fileID: 2119046722}
+  RenderMaterial: {fileID: 2100000, guid: 6b40bf9fdd243f5428103d7e6d0da3d4, type: 2}
   fieldCS: {fileID: 7200000, guid: 7059157e435a7e84192ab9a11522a814, type: 3}
---- !u!114 &2119046729
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2119046722}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c24dcd94b0811347a38aa6318bdd9ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShaderTest
-  CS: {fileID: 7200000, guid: 67060ab0e43e62e46a2e6dee4dbfc4b8, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

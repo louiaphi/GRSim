@@ -25,6 +25,7 @@ public class MainRender2 : MonoBehaviour
     public float margin = 1;
     public float SuckInMargin = 1.05f;
 
+    public GameObject TargetPlane; // drag the plane GameObject here
     public ComputeShader fieldCS;
     RenderTexture target;
 
@@ -33,14 +34,15 @@ public class MainRender2 : MonoBehaviour
         diag = Matrix4x4.identity;
         diag[0, 0] = -1;
         MetricTensor = Matrix4x4.identity;
+        Debug.Log(SystemInfo.graphicsDeviceType);
     }
 
     void Dispatch()
     {
-        if (target == null || target.width != MonitorSize.x || target.height != MonitorSize.y)
+    
+        if (target == null)
         {
-            if (target != null) target.Release();
-            target = new RenderTexture(MonitorSize.x, MonitorSize.y, 0, RenderTextureFormat.ARGBFloat);
+            target = new RenderTexture(MonitorSize.x, MonitorSize.y, 0);
             target.enableRandomWrite = true;
             target.filterMode = FilterMode.Point;
             target.Create();
@@ -215,5 +217,10 @@ public class MainRender2 : MonoBehaviour
                 e[mu, aa] = sum;
             }
         return e;
+    }
+    void OnGUI()
+    {
+        if (target != null)
+            GUI.DrawTexture(new Rect(0, 0, MonitorSize.x, MonitorSize.y), target);
     }
 }
