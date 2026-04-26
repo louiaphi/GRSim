@@ -24,6 +24,7 @@ public class MainRender2 : MonoBehaviour
     public int maxSteps = 400;
     public float margin = 1;
     public float SuckInMargin = 1.05f;
+    public float T_max = 8000;
 
     public GameObject TargetPlane; // drag the plane GameObject here
     public ComputeShader fieldCS;
@@ -66,7 +67,7 @@ public class MainRender2 : MonoBehaviour
         fieldCS.SetInt("maxSteps", maxSteps);
         fieldCS.SetFloat("Rsoi", Rsoi);
         fieldCS.SetFloat("SuckInMargin", SuckInMargin);
-
+        fieldCS.SetFloat("T_max", T_max);
         fieldCS.Dispatch(
             kernel,
             Mathf.CeilToInt(MonitorSize.x / 8f),
@@ -217,10 +218,5 @@ public class MainRender2 : MonoBehaviour
                 e[mu, aa] = sum;
             }
         return e;
-    }
-    void OnGUI()
-    {
-        if (target != null)
-            GUI.DrawTexture(new Rect(0, 0, MonitorSize.x, MonitorSize.y), target);
     }
 }
