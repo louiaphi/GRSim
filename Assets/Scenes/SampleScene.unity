@@ -955,7 +955,7 @@ Transform:
   m_GameObject: {fileID: 1213018513}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 119.7, z: 0}
+  m_LocalPosition: {x: 0, y: 118, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1120,8 +1120,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049e44d17bb112249ac28036f60123e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainRender2
-  CameraPosition: {x: 0, y: 0, z: 0, w: 15}
-  CameraRotation: {x: 0, y: 180, z: 90}
+  CameraPosition: {x: 0, y: 15, z: 3, w: 5}
+  CameraRotation: {x: 0, y: 225, z: 90}
   FOV: 1.5
   MonitorSize: {x: 1920, y: 1080}
   M: 2
@@ -1130,9 +1130,11 @@ MonoBehaviour:
   preciseSteps: 0.01
   Rsoi: 250
   maxSteps: 10000
-  margin: 1
-  SuckInMargin: 1.01
+  margin: 0.1
+  SuckInMargin: 1.001
   T_max: 8000
+  AccBrightness: 0.5
+  WaveL: 480
   TargetPlane: {fileID: 2119046722}
   fieldCS: {fileID: 7200000, guid: 7059157e435a7e84192ab9a11522a814, type: 3}
 --- !u!1660057539 &9223372036854775807

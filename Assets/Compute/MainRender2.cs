@@ -25,6 +25,8 @@ public class MainRender2 : MonoBehaviour
     public float margin = 1;
     public float SuckInMargin = 1.05f;
     public float T_max = 8000;
+    public float AccBrightness = 0.5f;
+    public float WaveL = 380;
 
     public GameObject TargetPlane; // drag the plane GameObject here
     public ComputeShader fieldCS;
@@ -68,6 +70,8 @@ public class MainRender2 : MonoBehaviour
         fieldCS.SetFloat("Rsoi", Rsoi);
         fieldCS.SetFloat("SuckInMargin", SuckInMargin);
         fieldCS.SetFloat("T_max", T_max);
+        fieldCS.SetFloat("AccBrightness", AccBrightness);
+        fieldCS.SetFloat("WaveL", WaveL);
         fieldCS.Dispatch(
             kernel,
             Mathf.CeilToInt(MonitorSize.x / 8f),

@@ -147,6 +147,8 @@ float Rsoi;
 float SuckInMargin;
 
 float h_div_k = 4.799243073e-10; // h / k in m*K, used for Planck function
+float AccBrightness;
+float WaveL;
 
 struct LightRay
 {
@@ -437,6 +439,16 @@ bool HitBlackHole(float4 newPos)
 {
     return CalcR(newPos, a) <= 2 * M * SuckInMargin;
 }
+
+
+
+
+
+
+
+
+
+
 //simple approximation, assumes the disk is infinitely thin and in the equatorial plane, also assumes temperature only depends on r, not on height above the plane, which is not true but good enough for now
 float DiskTemperature(float r, float Rin)
 {
@@ -444,19 +456,40 @@ float DiskTemperature(float r, float Rin)
     float f = 1.0 - sqrt(Rin / r); // =0 at ISCO
     return pow(r, -0.75) * pow(f, 0.25); //only realtive temperature
 }
+
+
+
+
+
+
+
+
+
+
+
 //https://en.wikipedia.org/wiki/Black-body_radiation#Planck's_law_of_black-body_radiation
-float Planck(float wavelength_nm, float T) //little bit different from the usual formula, written by claude, because the usual uses multiple constants of the size of e-34, which wouldnt fit in floats
+float Planck(float wavelength_nm, float T) //little bit different from the usual formula, written by claude, because the usual uses multiple constants of the size of e-34, which wouldnt fit in floats and double is buggy in Direct3D11
 {
     float wl_m = wavelength_nm * 1e-9;
     float hc_over_lkT = 0.014388 / (wl_m * T); // hc/k in m·K
     return 1.0 / (pow(wavelength_nm, 5.0) * (exp(hc_over_lkT) - 1.0));
 }
+
+
+
+
+
+
+
+
+
+
+
 float3 BlackbodyRGB(float T)
 {
     float3 col = float3(0, 0, 0);
     float total = 0;
     // Sample 20 wavelengths across visible spectrum
-    [unroll]
     for (int i = 0; i < 20; i++) //make also accessable later
     {
         float wl = 380.0 + i * 20.0; // 380 to 760 nm
@@ -464,13 +497,15 @@ float3 BlackbodyRGB(float T)
         col += WavelengthToRGB(wl) * intensity;
         total += intensity;
     }
-    return col / max(total, 1e-10); //max because total can be 0 if T is very low, but then the color should be black anyway, so it doesnt matter if we divide by a small number and get some random color, it will be multiplied by 0 later on
+    
+    return col / total;
 }
 float3 AccretionDiskColor(float4 ip, float4 k, float r, float Rin, float Rout, float T_max)
 {
     // Temperature
     float T_rel = DiskTemperature(r, Rin); // relative, peaks ~1
-    float T = T_max * T_rel / max(DiskTemperature(Rin * 1.5, Rin), 1e-5); // normalize peak to T_max
+    float T = T_max * T_rel;
+    
     if (T < 100)
     {
         return float3(0, 0, 0);
@@ -478,21 +513,12 @@ float3 AccretionDiskColor(float4 ip, float4 k, float r, float Rin, float Rout, f
 
     // Brightness: Stefan-Boltzmann scaling (total power ∝ T^4)
     float brightness = pow(T / T_max, 4.0);
-
     return BlackbodyRGB(T) * brightness;
 }
-//float DiskOpacity(float r, float Rin, float Rout)
-//{
-//    // Fully opaque in body, fades at outer edge over ~1M width
-//    float inner_fade = saturate((r - Rin) / (0.5 * M));
-//    float outer_fade = saturate((Rout - r) / (1.0 * M));
-//    return inner_fade * outer_fade;
-//}
 float4 HitFlatAccretionDisk(float4 newPos, float4 oldPos, float4 k)
 {
     if (newPos.w * oldPos.w >= 0)
         return float4(0, 0, 0, 0);
-    
     float t = oldPos.w / (oldPos.w - newPos.w);
     float4 ip = oldPos + t * (newPos - oldPos);
     ip.w = 0;
@@ -505,6 +531,22 @@ float4 HitFlatAccretionDisk(float4 newPos, float4 oldPos, float4 k)
     float3 color = AccretionDiskColor(ip, k, r, Rin, Rout, T_max);
     return float4(color, 1);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 float4 HitSOI(float4 pos)
 {
     if (CalcR(pos, a) < Rsoi) return float4(0, 0, 0, 0);
