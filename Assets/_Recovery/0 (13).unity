@@ -1120,7 +1120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049e44d17bb112249ac28036f60123e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainRender2
-  CameraPosition: {x: 0, y: 30, z: 6, w: 10}
+  CameraPosition: {x: 0, y: 15, z: 3, w: 5}
   CameraRotation: {x: 0, y: 225, z: 90}
   FOV: 1.5
   MonitorSize: {x: 1920, y: 1080}
@@ -1131,9 +1131,9 @@ MonoBehaviour:
   Rsoi: 250
   maxSteps: 10000
   margin: 0.1
-  SuckInMargin: 1.1
-  T_max: 2000
-  AccBrightness: 1
+  SuckInMargin: 1.001
+  T_max: 8000
+  AccBrightness: 0.5
   WaveL: 480
   TargetPlane: {fileID: 2119046722}
   fieldCS: {fileID: 7200000, guid: 7059157e435a7e84192ab9a11522a814, type: 3}

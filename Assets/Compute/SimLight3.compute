@@ -11,110 +11,110 @@ bool isNaN(float x)
     return !(x < 0 || x == 0 || x > 0);
 }
 
-//trandlated from https://www.eureca.de/5116-1-Bruton-color-mapping.html
-float4 Bruton(float lambda, float intensity, float gamma = 0.8) //converts wavelength to rgb, crude approximation, only for visible spectrum, lambda in nm
-{
-    float r = 0, g = 0, b = 0;
-    if (lambda >= 380 && lambda < 440)
-    {
-        r = -(lambda - 440) / (440 - 380);
-        g = 0;
-        b = 1;
-    }
-    else if (lambda >= 440 && lambda < 490)
-    {
-        r = 0;
-        g = (lambda - 440) / (490 - 440);
-        b = 1;
-    }
-    else if (lambda >= 490 && lambda < 510)
-    {
-        r = 0;
-        g = 1;
-        b = -(lambda - 510) / (510 - 490);
-    }
-    else if (lambda >= 510 && lambda < 580)
-    {
-        r = (lambda - 510) / (580 - 510);
-        g = 1;
-        b = 0;
-    }
-    else if (lambda >= 580 && lambda < 645)
-    {
-        r = 1;
-        g = -(lambda - 645) / (645 - 580);
-        b = 0;
-    }
-    else if (lambda >= 645 && lambda <= 780)
-    {
-        r = 1;
-        g = 0;
-        b = 0;
-    }
-    
-    float factor;
-    if (380 <= lambda && lambda < 420)
-    {
-        factor = 0.3 + 0.7 * (lambda - 380) / (420 - 380);
-    }
-    else if (420 <= lambda && lambda < 701)
-    {
-        factor = 1.0;
-    }
-    else if (701 <= lambda && lambda <= 780)
-    {
-        factor = 0.3 + 0.7 * (780 - lambda) / (780 - 700);
-    }
-    else
-    {
-        factor = 0.0;
-    }
-
-
-    // --- Logarithmic brightness scale ---
-    // Minimum value 1, to avoid log(0) 
-    intensity = max(intensity, 1);
-    float brightness = log(intensity) / log(65536); // 0..1
-    brightness *= factor; // Factor from Bruton correction
-
-
-    // --- Gamma correction und 0–255 scaling ---
-    // Minimum value 1, to avoid log(0) 
-    intensity = max(intensity, 1);
-
-    //adjust for brighness and apply gamma correction, then scale to 0..255 range and round to nearest integer
-    float R = float(round(pow((brightness), gamma) * 255));
-    float G = float(round(pow((brightness), gamma) * 255));
-    float B = float(round(pow((brightness), gamma) * 255));
-    return float4(R, G, B, 1);
-}
-
-//alternate version without intenisty
-float3 WavelengthToRGB(float wl)
-{
-    float3 c = float3(0, 0, 0);
-    if (wl < 380)
-        c = float3(0, 0, 0);
-    else if (wl < 440)
-        c = float3((440 - wl) / 60.0, 0, 1);
-    else if (wl < 490)
-        c = float3(0, (wl - 440) / 50.0, 1);
-    else if (wl < 510)
-        c = float3(0, 1, (510 - wl) / 20.0);
-    else if (wl < 580)
-        c = float3((wl - 510) / 70.0, 1, 0);
-    else if (wl < 645)
-        c = float3(1, (645 - wl) / 65.0, 0);
-    else if (wl < 780)
-        c = float3(1, 0, 0);
-    // Intensity correction at spectrum edges
-    float s = 1.0;
-    if (wl < 420)
-        s = 0.3 + 0.7 * (wl - 380) / 40.0;
-    else if (wl > 700)
-        s = 0.3 + 0.7 * (780 - wl) / 80.0;
-    return c * s;
-}
+////trandlated from https://www.eureca.de/5116-1-Bruton-color-mapping.html
+//float4 Bruton(float lambda, float intensity, float gamma = 0.8) //converts wavelength to rgb, crude approximation, only for visible spectrum, lambda in nm
+//
+//  float r = 0, g = 0, b = 0;
+//  if (lambda >= 380 && lambda < 440)
+//  {
+//      r = -(lambda - 440) / (440 - 380);
+//      g = 0;
+//      b = 1;
+//  }
+//  else if (lambda >= 440 && lambda < 490)
+//  {
+//      r = 0;
+//      g = (lambda - 440) / (490 - 440);
+//      b = 1;
+//  }
+//  else if (lambda >= 490 && lambda < 510)
+//  {
+//      r = 0;
+//      g = 1;
+//      b = -(lambda - 510) / (510 - 490);
+//  }
+//  else if (lambda >= 510 && lambda < 580)
+//  {
+//      r = (lambda - 510) / (580 - 510);
+//      g = 1;
+//      b = 0;
+//  }
+//  else if (lambda >= 580 && lambda < 645)
+//  {
+//      r = 1;
+//      g = -(lambda - 645) / (645 - 580);
+//      b = 0;
+//  }
+//  else if (lambda >= 645 && lambda <= 780)
+//  {
+//      r = 1;
+//      g = 0;
+//      b = 0;
+//  }
+//  
+//  float factor;
+//  if (380 <= lambda && lambda < 420)
+//  {
+//      factor = 0.3 + 0.7 * (lambda - 380) / (420 - 380);
+//  }
+//  else if (420 <= lambda && lambda < 701)
+//  {
+//      factor = 1.0;
+//  }
+//  else if (701 <= lambda && lambda <= 780)
+//  {
+//      factor = 0.3 + 0.7 * (780 - lambda) / (780 - 700);
+//  }
+//  else
+//  {
+//      factor = 0.0;
+//  }
+//
+//
+//  // --- Logarithmic brightness scale ---
+//  // Minimum value 1, to avoid log(0) 
+//  intensity = max(intensity, 1);
+//  float brightness = log(intensity) / log(65536); // 0..1
+//  brightness *= factor; // Factor from Bruton correction
+//
+//
+//  // --- Gamma correction und 0–255 scaling ---
+//  // Minimum value 1, to avoid log(0) 
+//  intensity = max(intensity, 1);
+//
+//  //adjust for brighness and apply gamma correction, then scale to 0..255 range and round to nearest integer
+//  float R = float(round(pow((brightness), gamma) * 255));
+//  float G = float(round(pow((brightness), gamma) * 255));
+//  float B = float(round(pow((brightness), gamma) * 255));
+//  return float4(R, G, B, 1);
+//
+//
+////alternate version without intenisty
+//float3 WavelengthToRGB(float wl)
+//{
+//    float3 c = float3(0, 0, 0);
+//    if (wl < 380)
+//        c = float3(0, 0, 0);
+//    else if (wl < 440)
+//        c = float3((440 - wl) / 60.0, 0, 1);
+//    else if (wl < 490)
+//        c = float3(0, (wl - 440) / 50.0, 1);
+//    else if (wl < 510)
+//        c = float3(0, 1, (510 - wl) / 20.0);
+//    else if (wl < 580)
+//        c = float3((wl - 510) / 70.0, 1, 0);
+//    else if (wl < 645)
+//        c = float3(1, (645 - wl) / 65.0, 0);
+//    else if (wl < 780)
+//        c = float3(1, 0, 0);
+//    // Intensity correction at spectrum edges
+//    float s = 1.0;
+//    if (wl < 420)
+//        s = 0.3 + 0.7 * (wl - 380) / 40.0;
+//    else if (wl > 700)
+//        s = 0.3 + 0.7 * (780 - wl) / 80.0;
+//    return c * s;
+//}
 
 // ---- bindings -------------------------------------------------------------
 
@@ -145,6 +145,7 @@ float T_max;
 
 float Rsoi;
 float SuckInMargin;
+float Rin;
 
 float h_div_k = 4.799243073e-10; // h / k in m*K, used for Planck function
 float AccBrightness;
@@ -269,16 +270,6 @@ float4 CalcDelH(float4 pos, float r, float M, float a)
                   delH_R * dr.z,
                   delH_R * dr.w + delH_Z);
 }
-float CalcRisco() //inner most stable orbit https://en.wikipedia.org/wiki/Innermost_stable_circular_orbit#Rotating_black_holes
-{
-    float chi = a / M;
-    float Z1 = 1 + pow(1 - chi * chi, 1 / 3.0) * (pow(1 + chi, 1 / 3.0) + pow(1 - chi, 1 / 3.0));
-    float Z2 = sqrt(3 * chi * chi + Z1 * Z1);
-    float Risco = M * (3 + Z2 - sqrt((3 - Z1) * (3 + Z1 + 2 * Z2)));
-    return Risco;
-}
-
-// ---- metric and its derivative -------------------------------------------
 
 float4x4 CalcInverseMetric(float H, float4 L)
 {
@@ -301,10 +292,8 @@ MetricData CalcMetric(float4 position, float r, float a, float M)
     float4 l = CalcL(position, r, a);
     MetricData md;
     md.g = float4x4(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
-    //[unroll] 
     for (int mu = 0; mu < 4; mu++)
     {
-    //[unroll] 
         for (int nu = 0; nu < 4; nu++)
         {
             md.g[mu][nu] = diag[mu][nu] + 2 * H * l[mu] * l[nu];
@@ -335,11 +324,6 @@ DelMetric CalcDelMetricTensor(float4 position, float r, float a, float M)
     }
     return dM;
 }
-
-// ---- fused Christoffel + acceleration ------------------------------------
-// Computes  acc^mu = -Gamma^mu_{alpha beta} k^alpha k^beta  without ever
-// materialising the full Christoffel tensor. Saves register pressure and
-// flattens the call graph for the shader compiler.
 
 float4 CalculateAcceleration(float4 pos, float4 k)
 {
@@ -449,23 +433,13 @@ bool HitBlackHole(float4 newPos)
 
 
 
-//simple approximation, assumes the disk is infinitely thin and in the equatorial plane, also assumes temperature only depends on r, not on height above the plane, which is not true but good enough for now
+//simple approximation, assumes the disk is infinitely thin and in the equatorial plane, also then only an approximation
 float DiskTemperature(float r, float Rin)
 {
-    // Novikov-Thorne
-    float f = 1.0 - sqrt(Rin / r); // =0 at ISCO
+    // Novikov-Thorne aka sub edington
+    float f = 1.0 - sqrt(Rin / r); // = 0 at ISCO
     return pow(r, -0.75) * pow(f, 0.25); //only realtive temperature
 }
-
-
-
-
-
-
-
-
-
-
 
 //https://en.wikipedia.org/wiki/Black-body_radiation#Planck's_law_of_black-body_radiation
 float Planck(float wavelength_nm, float T) //little bit different from the usual formula, written by claude, because the usual uses multiple constants of the size of e-34, which wouldnt fit in floats and double is buggy in Direct3D11
@@ -474,83 +448,77 @@ float Planck(float wavelength_nm, float T) //little bit different from the usual
     float hc_over_lkT = 0.014388 / (wl_m * T); // hc/k in m·K
     return 1.0 / (pow(wavelength_nm, 5.0) * (exp(hc_over_lkT) - 1.0));
 }
+// CIE 1931 color matching functions (Gaussian fit by Wyman et al.)
+float3 CIEColorMatch(float wl) //maps wavelength in nm to XYZ color space, not normalized, only for visible spectru
+{
+    float3 xyz;
+    xyz.x = 1.056 * exp(-0.5 * pow((wl - 599.8) / 37.9, 2))
+          + 0.362 * exp(-0.5 * pow((wl - 442.0) / 16.0, 2))
+          - 0.065 * exp(-0.5 * pow((wl - 501.1) / 20.4, 2));
+    xyz.y = 0.821 * exp(-0.5 * pow((wl - 568.8) / 46.9, 2))
+          + 0.286 * exp(-0.5 * pow((wl - 530.9) / 16.3, 2));
+    xyz.z = 1.217 * exp(-0.5 * pow((wl - 437.0) / 11.8, 2))
+          + 0.681 * exp(-0.5 * pow((wl - 459.0) / 26.0, 2));
+    return max(xyz, 0);
+}
 
-
-
-
-
-
-
-
-
-
+float3 XYZtoRGB(float3 xyz) //converts xyz in cie 1931 to rgb both this and the one above written by claude, find some sources some when else...
+{
+    // Standard sRGB matrix, D65 white point
+    float r = 3.2404542 * xyz.x - 1.5371385 * xyz.y - 0.4985314 * xyz.z;
+    float g = -0.9692660 * xyz.x + 1.8760108 * xyz.y + 0.0415560 * xyz.z;
+    float b = 0.0556434 * xyz.x - 0.2040259 * xyz.y + 1.0572252 * xyz.z;
+    return max(float3(r, g, b), 0);
+}
 
 float3 BlackbodyRGB(float T)
 {
-    float3 col = float3(0, 0, 0);
-    float total = 0;
-    // Sample 20 wavelengths across visible spectrum
-    for (int i = 0; i < 20; i++) //make also accessable later
+    float3 xyz = float3(0, 0, 0);
+    [loop]
+    for (int i = 0; i < 40; i++)
     {
-        float wl = 380.0 + i * 20.0; // 380 to 760 nm
-        float intensity = Planck(wl, T);
-        col += WavelengthToRGB(wl) * intensity;
-        total += intensity;
+        float wl = 360.0 + i * 10.0;
+        xyz += CIEColorMatch(wl) * Planck(wl, T);
     }
-    
-    return col / total;
+    return max(XYZtoRGB(xyz), 0); //max with 0 to avoid negative colors, which fsr can happen it gaussian fit
 }
+
 float3 AccretionDiskColor(float4 ip, float4 k, float r, float Rin, float Rout, float T_max)
 {
-    // Temperature
-    float T_rel = DiskTemperature(r, Rin); // relative, peaks ~1
-    float T = T_max * T_rel;
-    
-    if (T < 100)
-    {
-        return float3(0, 0, 0);
-    }
+    float T_rel = DiskTemperature(r, Rin); // relative temperature at radius r, normalized to 1 at ISCO
+    float T_peak_rel = DiskTemperature((49.0 / 36.0) * Rin, Rin); // relative peak temperature, occurs at r = (49/36) * Rin for Novikov-Thorne disk.
+    float T = T_max * T_rel / max(T_peak_rel, 1e-6); // use actual T_max at T_peak_rel to scale relative temperature to absolute temperature, avoid div by 0 just in case
 
-    // Brightness: Stefan-Boltzmann scaling (total power ∝ T^4)
-    float brightness = pow(T / T_max, 4.0);
-    return BlackbodyRGB(T) * brightness;
+    if (T < 100.0)
+        return float3(0, 0, -1); // too cold to emit visible light, return seethrew
+
+    float3 color = BlackbodyRGB(T); // calc color
+
+    float3 peak = BlackbodyRGB(T_max); // color at peak temperature, used to scale the color so that the brightest point is not oversaturated, avoid div by 0 just in case
+    float scale = max(peak.r, max(peak.g, peak.b));
+    color /= max(scale, 1e-30);
+
+    return color * AccBrightness; // apply overall brightness factor
 }
 float4 HitFlatAccretionDisk(float4 newPos, float4 oldPos, float4 k)
 {
-    if (newPos.w * oldPos.w >= 0)
+    if (newPos.w * oldPos.w >= 0) //test if intersect with equatorial plane
         return float4(0, 0, 0, 0);
-    float t = oldPos.w / (oldPos.w - newPos.w);
-    float4 ip = oldPos + t * (newPos - oldPos);
+    float t = oldPos.w / (oldPos.w - newPos.w); //approximate exact intersection point linearly
+    float4 ip = oldPos + t * (newPos - oldPos); //intersection point = ip
     ip.w = 0;
 
     float r = CalcR(ip, a);
-    float Rin = CalcRisco();
-    float Rout = 20.0 * M;
-    if (r < Rin || r > Rout)
+    float Rout = 20.0 * M; // random cutoff point (maybe make accessible)
+    if (r < Rin || r > Rout) // when inside
         return float4(0, 0, 0, 0);
-    float3 color = AccretionDiskColor(ip, k, r, Rin, Rout, T_max);
+    float3 color = AccretionDiskColor(ip, k, r, Rin, Rout, T_max); //calc color
     return float4(color, 1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 float4 HitSOI(float4 pos)
 {
     if (CalcR(pos, a) < Rsoi) return float4(0, 0, 0, 0);
-    return float4(0, 1, 0, 1);
+    return float4(0.1, 0.1, 0.1, 1);
 }
 float4 HitObject(float4 newPos, float4 oldPos, float4 k)
 {

@@ -28,7 +28,7 @@ public class MainRender2 : MonoBehaviour
     public float AccBrightness = 0.5f;
     public float WaveL = 380;
 
-    public GameObject TargetPlane; // drag the plane GameObject here
+    public GameObject TargetPlane;
     public ComputeShader fieldCS;
     RenderTexture target;
 
@@ -72,6 +72,7 @@ public class MainRender2 : MonoBehaviour
         fieldCS.SetFloat("T_max", T_max);
         fieldCS.SetFloat("AccBrightness", AccBrightness);
         fieldCS.SetFloat("WaveL", WaveL);
+        fieldCS.SetFloat("Rin", CalcRisco());
         fieldCS.Dispatch(
             kernel,
             Mathf.CeilToInt(MonitorSize.x / 8f),
@@ -222,5 +223,14 @@ public class MainRender2 : MonoBehaviour
                 e[mu, aa] = sum;
             }
         return e;
+    }
+
+    float CalcRisco() //inner most stable orbit https://en.wikipedia.org/wiki/Innermost_stable_circular_orbit#Rotating_black_holes
+    {
+        float chi = a / M;
+        float Z1 = 1 + Mathf.Pow(1 - chi * chi, 1 / 3.0f) * (Mathf.Pow(1 + chi, 1 / 3.0f) + Mathf.Pow(1 - chi, 1 / 3.0f));
+        float Z2 = Mathf.Sqrt(3 * chi * chi + Z1 * Z1);
+        float Risco = M * (3 + Z2 - Mathf.Sqrt((3 - Z1) * (3 + Z1 + 2 * Z2)));
+        return Risco;
     }
 }
