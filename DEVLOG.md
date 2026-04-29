@@ -27,7 +27,11 @@
 - 29.1.2026 Made Heatmap Visualization of H field Strength. Inside the ring singularity r ≈ 0 -> circle singularity (Note 1)
 - 1.2 Started Camera Debugging (If you include "making it worse" in the definition of debugging)
 - 14-16.3 Worked on drawing picture to screen an simulate collisions with different obejcts like accretion disk, black hole or Sphere of "I don't care to simulate this any further"
-- 18.3 Fixed Bug with Camera when Aspectration != 1 and fixed holes in Black hole (took 3 days to fix this bug)
+- 18.3 Fixed Bug with Camera when Aspect ratio != 1 and fixed holes in Black hole (took 3 days to fix this bug)
+(small brake because of holidays and Antikenfahrt)
+- 24-26.4 translated to hlsl
+- 27.4 made better version of Accretiondisk
+- fixed Accretiondisk and added Background image
 
 ## ToDo
 
@@ -38,7 +42,7 @@
 - render image [x]
 - account for redshift [ ]
 - make steps inverse proportional to H so that stronger gravity = smaller step size[ ]
-- fix asymetries [ ]
+- fix asymetries [x]
 - fix escaping [x]
 
 ## Debugg Steps:
@@ -47,7 +51,7 @@
 - christoffel symbols [x]
 - del metric tensor [x]
 - RK4 [x]
-- Visualize Light Stepping [ ]
+- Visualize Light Stepping [x]
 
 ## Notes
 
