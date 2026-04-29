@@ -1121,8 +1121,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainRender2
   CameraPosition: {x: 0, y: 70, z: 0, w: 10}
-  CameraRotation: {x: 0, y: 270, z: 90}
-  FOV: 1.5
+  CameraRotation: {x: 0, y: 0, z: 90}
+  FOV: 1
   MonitorSize: {x: 1920, y: 1080}
   M: 2
   a: 0

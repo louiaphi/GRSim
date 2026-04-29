@@ -73,3 +73,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+Assets/Compute/starmap_2020_16k.exr.meta
+Assets/Compute/starmap_2020_16k.exr
+Assets/Compute/starmap_2020_4k.exr
+Assets/Compute/starmap_2020_8k.exr.meta
+Assets/Compute/starmap_2020_4k.exr.meta
+Assets/Compute/starmap_2020_8k.exr

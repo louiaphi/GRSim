@@ -1120,8 +1120,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049e44d17bb112249ac28036f60123e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainRender2
-  CameraPosition: {x: 0, y: 70, z: 0, w: 10}
-  CameraRotation: {x: 0, y: 270, z: 90}
+  CameraPosition: {x: 0, y: 70, z: 70, w: 10}
+  CameraRotation: {x: 340, y: 270, z: 90}
   FOV: 1.5
   MonitorSize: {x: 1920, y: 1080}
   M: 2

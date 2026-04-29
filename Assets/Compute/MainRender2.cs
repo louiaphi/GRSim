@@ -25,11 +25,12 @@ public class MainRender2 : MonoBehaviour
     public float margin = 1;
     public float SuckInMargin = 1.05f;
     public float T_max = 8000;
-    public float AccBrightness = 0.5f;
-    public float WaveL = 380;
+    public float AccBrightness = 1f;
+    public float BackgroundBrightness = 1f;
 
     public GameObject TargetPlane;
     public ComputeShader fieldCS;
+    public Texture2D DeepStarMap;
     RenderTexture target;
 
     void Start()
@@ -71,8 +72,9 @@ public class MainRender2 : MonoBehaviour
         fieldCS.SetFloat("SuckInMargin", SuckInMargin);
         fieldCS.SetFloat("T_max", T_max);
         fieldCS.SetFloat("AccBrightness", AccBrightness);
-        fieldCS.SetFloat("WaveL", WaveL);
         fieldCS.SetFloat("Rin", CalcRisco());
+        fieldCS.SetTexture(kernel, "Starmap", DeepStarMap);
+        fieldCS.SetFloat("BackgroundBrightness", BackgroundBrightness);
         fieldCS.Dispatch(
             kernel,
             Mathf.CeilToInt(MonitorSize.x / 8f),
@@ -99,12 +101,12 @@ public class MainRender2 : MonoBehaviour
     public float CalcR2(Vector4 pos, float a)
     {
         float rho2 = pos.y * pos.y + pos.z * pos.z + pos.w * pos.w;
-        return 0.5f * (rho2 - a * a + Mathf.Sqrt(Mathf.Pow(rho2 - a * a, 2) + 4 * a * a * pos.w * pos.w));
+        return 0.5f * (rho2 - a * a + Mathf.Sqrt(Mathf.Abs(Mathf.Pow(rho2 - a * a, 2) + 4 * a * a * pos.w * pos.w)));
     }
 
     public float CalcR(Vector4 pos, float a)
     {
-        return Mathf.Sqrt(CalcR2(pos, a));
+        return Mathf.Sqrt(Mathf.Abs(CalcR2(pos, a)));
     }
 
     public void CalcMetricTensor(Vector4 position, float r, float a, float M)
@@ -133,7 +135,7 @@ public class MainRender2 : MonoBehaviour
 
     public Matrix4x4 localTetrad(Vector4 pos)
     {
-        Vector4 u  = new Vector4(1f / Mathf.Sqrt(-MetricTensorAtCam[0, 0]), 0, 0, 0);
+        Vector4 u  = new Vector4(1f / Mathf.Sqrt(Mathf.Abs(-MetricTensorAtCam[0, 0])), 0, 0, 0);
         Vector4 v1 = new Vector4(0, 1, 0, 0);
         Vector4 v2 = new Vector4(0, 0, 1, 0);
         Vector4 v3 = new Vector4(0, 0, 0, 1);
@@ -164,7 +166,7 @@ public class MainRender2 : MonoBehaviour
             for (int alpha = 0; alpha < 4; alpha++)
                 for (int beta = 0; beta < 4; beta++)
                     sum += MetricTensorAtCam[alpha, beta] * sqv[alpha, 1] * sqv[beta, 1];
-            e1[dim] = sqv[dim, 1] / Mathf.Sqrt(sum);
+            e1[dim] = sqv[dim, 1] / Mathf.Sqrt(Mathf.Abs(sum));
         }
         for (int dim = 0; dim < 4; dim++)
         {
@@ -180,7 +182,7 @@ public class MainRender2 : MonoBehaviour
             for (int alpha = 0; alpha < 4; alpha++)
                 for (int beta = 0; beta < 4; beta++)
                     sum += MetricTensorAtCam[alpha, beta] * sqvs2[alpha] * sqvs2[beta];
-            e2[dim] = sqvs2[dim] / Mathf.Sqrt(sum);
+            e2[dim] = sqvs2[dim] / Mathf.Sqrt(Mathf.Abs(sum));
         }
         for (int dim = 0; dim < 4; dim++)
         {
@@ -199,7 +201,7 @@ public class MainRender2 : MonoBehaviour
             for (int alpha = 0; alpha < 4; alpha++)
                 for (int beta = 0; beta < 4; beta++)
                     sum += MetricTensorAtCam[alpha, beta] * sqvs3[alpha] * sqvs3[beta];
-            e3[dim] = sqvs3[dim] / Mathf.Sqrt(sum);
+            e3[dim] = sqvs3[dim] / Mathf.Sqrt(Mathf.Abs(sum));
         }
         return new Matrix4x4(e0, e1, e2, e3);
     }
@@ -229,8 +231,8 @@ public class MainRender2 : MonoBehaviour
     {
         float chi = a / M;
         float Z1 = 1 + Mathf.Pow(1 - chi * chi, 1 / 3.0f) * (Mathf.Pow(1 + chi, 1 / 3.0f) + Mathf.Pow(1 - chi, 1 / 3.0f));
-        float Z2 = Mathf.Sqrt(3 * chi * chi + Z1 * Z1);
-        float Risco = M * (3 + Z2 - Mathf.Sqrt((3 - Z1) * (3 + Z1 + 2 * Z2)));
+        float Z2 = Mathf.Sqrt(Mathf.Abs(3 * chi * chi + Z1 * Z1));
+        float Risco = M * (3 + Z2 - Mathf.Sqrt(Mathf.Abs((3 - Z1) * (3 + Z1 + 2 * Z2))));
         return Risco;
     }
 }
