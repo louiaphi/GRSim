@@ -31,7 +31,7 @@
 (small brake because of holidays and Antikenfahrt)
 - 24-26.4 translated to hlsl
 - 27.4 made better version of Accretiondisk
-- fixed Accretiondisk and added Background image
+- 28.4 fixed Accretiondisk and added Background image
 
 ## ToDo
 
