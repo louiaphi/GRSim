@@ -9,7 +9,7 @@ Image of simulated H (deviation from Minkowski Metric)
 ###### (500x500), M = 80, a = 60(wayyy to much), z = 0(obvious), Rim = 700(singularity infinitly thin, makes sing bigger),
 ###### (500x500), M = 8, a = 4.5, z = 0, Rim = 300 (more realistic)
 <!-- Yes, my only Markdown skills are spamming #, and I googled how to do "hidden Text" in Md for this... //... wait what? I think copilot auto commit name stuff just gave me away, the commit message for this will be funny --> 
-#### Legend:
+#### Key:
 * Darker: Less deviation
 * Lighter: More deviation
 * Red: Ring Singularity
