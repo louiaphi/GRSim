@@ -333,8 +333,31 @@ bool HitBlackHole(float4 newPos)
 
 
 
-
-
+float3 phi_hatComponent(float x, float y, float r) //gets the phi component in Kerr-Shild from x and y in cartesian
+{
+    float3 phi_hat = float3(-y, x, 0);
+    phi_hat *= 1 / r;
+    return phi_hat;
+}
+float GravRedShift(float r)
+{
+    float g = sqrt(1 - (2 * M * r) / (r * r + a * a * pow(cos(3.1415926 / 2), 2)));
+    return g;
+}
+float DopplerRedShift(float r, float x, float y, float3 k)
+{
+    float v = sqrt(M / r);
+    float3 k =
+    float3 phi_hat = phi_hatComponent(x, y, r);
+    float beta_los = v * dot(phi_hat, k) / length(k);
+    float g = sqrt((1 - beta_los) / (1 + beta_los));
+}
+float RedShift(r, x, y, k)
+{
+    g_grav = GravRedShift(r);
+    g_dopp = DopplerRedShift(r, x, y, k);
+    return g_grav * g_dopp;
+}
 //simple approximation, assumes the disk is infinitely thin and in the equatorial plane, also then only an approximation
 float DiskTemperature(float r, float Rin)
 {
@@ -373,14 +396,15 @@ float3 XYZtoRGB(float3 xyz) //converts xyz in cie 1931 to rgb both this and the 
     return max(float3(r, g, b), 0);
 }
 
-float3 BlackbodyRGB(float T)
+float3 BlackbodyRGB(float T, float x, float y, float3 k)
 {
     float3 xyz = float3(0, 0, 0);
     [loop]
     for (int i = 0; i < 150; i++)
     {
         float wl = 360.0 + i * 5.0;
-        xyz += CIEColorMatch(wl) * Planck(wl, T);
+        float red_shift = RedShift(CalcR(float4(0, x, y, 0), a), x, y, k); 
+        xyz += CIEColorMatch(wl / red_shift) * Planck(wl, T); // strengths of emmited wave w.o. red shift, color with red shift 
     }
     return max(XYZtoRGB(xyz), 0); //max with 0 to avoid negative colors, which fsr can happen it gaussian fit
 }
