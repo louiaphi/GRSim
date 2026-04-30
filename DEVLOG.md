@@ -32,6 +32,7 @@
 - 24-26.4 translated to hlsl
 - 27.4 made better version of Accretiondisk
 - 28.4 fixed Accretiondisk and added Background image
+- 30.4 Implemented Redshift
 
 ## ToDo
 
