@@ -10,7 +10,6 @@
 
 # Change of Plans
 
-- No GPU Acceleration
 - Simulate Light one after another
 - Simulate Redshift
 
@@ -41,7 +40,7 @@
 - create local tedrad [x]
 - account for colissions [x]
 - render image [x]
-- account for redshift [ ]
+- account for redshift [x]
 - make steps inverse proportional to H so that stronger gravity = smaller step size[ ]
 - fix asymetries [x]
 - fix escaping [x]
